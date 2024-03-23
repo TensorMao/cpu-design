@@ -17,16 +17,15 @@ module regfile(
    output [63:0] rs1,
    output [63:0] rs2,
    output ZF, // x[rs1]==x[rs2]
-   output logic [63:0] regarray [31:0],
-   output wend  );
+   output logic [63:0] regarray [31:0] );
  integer i;
- reg [63:0] temp1;
- reg [63:0] temp2;
- logic isequal_rs1;
- logic isequal_rs2;
+ reg [63:0] temprs1;
+ reg [63:0] temprs2;
+ logic isequal_rdrs1;
+ logic isequal_rdrs2;
  always @ (posedge clk)begin
-    isequal_rs1=0;
-    isequal_rs2=0;
+    isequal_rdrs1=0;
+    isequal_rdrs2=0;
    if(rst)begin // if reset ,set all regs 0
       i=0;
       while(i<32)begin
@@ -38,23 +37,22 @@ module regfile(
        if (RF_W) begin
          if(rdc != 0) begin
             if(rdc==rs1c)begin
-              temp1= regarray[rdc];
-              isequal_rs1=1;
+              temprs1= regarray[rdc];
+              isequal_rdrs1=1;
             end
             if(rdc==rs2c)begin
-              temp2= regarray[rdc];
-              isequal_rs2=1;
+              temprs2= regarray[rdc];
+              isequal_rdrs2=1;
             end
             regarray[rdc] = rd;
             
        end
     end
-    wend=1;
  end
  end
 
- assign  rs1=isequal_rs1?temp1:regarray[rs1c];
- assign  rs2=isequal_rs2?temp2:regarray[rs2c];
+ assign  rs1=isequal_rdrs1?temprs1:regarray[rs1c];
+ assign  rs2=isequal_rdrs2?temprs2:regarray[rs2c];
 
  assign ZF= (rs1==rs2);
 endmodule

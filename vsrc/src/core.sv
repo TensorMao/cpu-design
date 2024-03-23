@@ -15,7 +15,7 @@ module core import common::*;(
 	input  logic       trint, swint, exint
 );
 	/* TODO: Add your CPU-Core here. */
-	cpu cpu(clk,reset,ireq,iresp,dreq,dresp,pc,pc_delay,order,RF_W,rdc,mux2_out,regarray,valid);
+	cpu cpu(clk,reset,ireq,iresp,dreq,dresp,pc,pc_delay,order,RF_W,rdc,mux2_out,regarray,valid,skip);
 	logic [63:0] pc;
 	logic [31:0] order;
     logic RF_W;
@@ -24,6 +24,7 @@ module core import common::*;(
 	logic [63:0] regarray [31:0];
 	logic valid;
 	logic  [63:0]pc_delay;
+	logic skip;
 
 `ifdef VERILATOR
 	DifftestInstrCommit DifftestInstrCommit(
