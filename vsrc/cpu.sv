@@ -5,7 +5,7 @@
 `include "rru/regfile.sv"
 `include "mux.sv"
 `include "rru/alu.sv"
-`include "idu/decoder.sv"
+`include "idu/idu.sv"
 `include "pcmux.sv"
 `include "ifu/ifu.sv"
 `else
@@ -39,9 +39,10 @@ module cpu import common::*; (
     logic [63:0]pcmux_out,mux2_out,mux3_out,mux4_out;
     assign mux2_out_sh=mux2_out;
     //decoder output
-    logic RF_W,DM_R,DM_W,M4,RF_Win;
-    logic [1:0]M1;
-    logic [2:0]ALU_C,M2,M2in;
+    logic RF_W,DM_R,DM_W,RF_Win;
+    logic [1:0]M1,M4;
+    logic [2:0]M2,M2in;
+    logic [3:0]ALU_C;
     logic [4:0]rs1c,rs2c,rdc_t,rdc;
     logic [63:0] sext_num;
     assign rdc=(dreq.strobe==0&&dresp.data_ok)?rdc_reg:rdc_t;
@@ -51,7 +52,7 @@ module cpu import common::*; (
     assign M2in=(dreq.strobe==0&&dresp.data_ok)?4:M2;
     //rf output
     logic [63:0]rs1_out,rs2_out;
-    logic ZF;
+    logic [2:0]ZF;
     //alu output
     logic [63:0]alu_out;
     //dmem output
@@ -86,13 +87,15 @@ module cpu import common::*; (
         valid_tem<=(iresp.data_ok&&~DM_R)||(dresp.data_ok&&dreq.strobe==0);
     end
     wire ifu_valid;
-    ifu _ifu_ (clk,rst,ireq,iresp,skip,pcmux_out,ifu_valid,pc_out,pc_delay,instr,instr_sh);
-    pcmux _pcmux_(add_out,{alu_out[63:1],1'b0},pc_out,M1,pcmux_out);
-    decoder _decoder_(instr,ZF,M1,M2,M4,ALU_C,RF_W,DM_R,DM_W,skip,sext_num,rdc_t,rs1c,rs2c);
-    regfile cpu_rf(clk,rst,RF_Win,rs1c,rs2c,rdc,mux2_out,rs1_out,rs2_out,ZF,regarray_out);
+    wire sign;
+    logic [5:0] shamt;
+    ifu cpu_ifu (clk,rst,ireq,iresp,skip,pcmux_out,ifu_valid,pc_out,pc_delay,instr,instr_sh);
+    pcmux cpu_pcmux(add_out,{alu_out[63:1],1'b0},pc_out,M1,pcmux_out);
+    idu cpu_idu(instr,ZF,M1,M2,M4,ALU_C,RF_W,DM_R,DM_W,skip,rdc_t,rs1c,rs2c,sign,sext_num,shamt);
+    regfile cpu_rf(clk,rst,sign,RF_Win,rs1c,rs2c,rdc,mux2_out,rs1_out,rs2_out,ZF,regarray_out);
     alu cpu_alu(rs1_out,mux4_out,ALU_C,alu_out);   
     mux mux2(alu_out,pc_out+4,sext_num,add_out,dmem_out,64'b0,64'b0,64'b0,M2in,mux2_out);
-    mux mux4(rs2_out, sext_num,64'b0,64'b0,64'b0,64'b0,64'b0,64'b0,{2'b0,M4},mux4_out);
+    mux mux4(rs2_out, sext_num,{58'b0,shamt},64'b0,64'b0,64'b0,64'b0,64'b0,{1'b0,M4},mux4_out);
    
        
  

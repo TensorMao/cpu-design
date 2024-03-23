@@ -9,14 +9,15 @@
 module regfile(
    input clk,
    input rst,
+   input sign,
    input RF_W,
    input [4:0] rs1c,//rs1 addr 
    input [4:0] rs2c,//rs2 addr 
    input [4:0] rdc,//rd addr 
    input [63:0] rd,
-   output [63:0] rs1,
-   output [63:0] rs2,
-   output ZF, // x[rs1]==x[rs2]
+   output logic[63:0] rs1,
+   output logic[63:0] rs2,
+   output logic[2:0]ZF, // x[rs1]==x[rs2]
    output logic [63:0] regarray [31:0] );
  integer i;
  reg [63:0] temprs1;
@@ -54,7 +55,18 @@ module regfile(
  assign  rs1=isequal_rdrs1?temprs1:regarray[rs1c];
  assign  rs2=isequal_rdrs2?temprs2:regarray[rs2c];
 
- assign ZF= (rs1==rs2);
+   always_comb begin 
+      if(rs1==rs2)ZF=0;
+      else if(sign)begin
+         if($signed(rs1)>$signed(rs2))ZF=1;
+         else ZF=3;
+      end
+      else begin
+         if($unsigned(rs1)>$unsigned(rs2))ZF=2;
+         else ZF=4;
+      end
+     
+   end
 endmodule
 
 `endif
