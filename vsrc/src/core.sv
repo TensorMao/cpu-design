@@ -15,16 +15,36 @@ module core import common::*;(
 	input  logic       trint, swint, exint
 );
 	/* TODO: Add your CPU-Core here. */
-	cpu cpu(clk,reset,ireq,iresp,dreq,dresp,pc,pc_delay,order,RF_W,rdc,mux2_out,regarray,valid,skip);
-	logic [63:0] pc;
+	cpu cpu(clk,reset,ireq,iresp,dreq,dresp,pc_delay,order,RF_W,rdc,rd,regarray,valid,skip);
 	logic [31:0] order;
     logic RF_W;
     logic [4:0]rdc;
-    logic [63:0] mux2_out;
+    logic [63:0] rd;
 	logic [63:0] regarray [31:0];
 	logic valid;
 	logic  [63:0]pc_delay;
 	logic skip;
+	
+
+	logic RF_W_tem1;logic RF_W_tem2;
+	always_ff @(posedge clk ) begin
+		RF_W_tem2 <= RF_W_tem1;
+		RF_W_tem1 <= RF_W;
+	end
+
+	logic[4:0] rdc_tem1;logic[4:0]  rdc_tem2;
+	always_ff @(posedge clk ) begin
+		rdc_tem2 <= rdc_tem1;
+		rdc_tem1 <= rdc;
+	end
+
+	logic[63:0] rd_tem1;logic[63:0]  rd_tem2;
+	always_ff @(posedge clk ) begin
+		rd_tem2 <= rd_tem1;
+		rd_tem1 <= rd;
+	end
+
+
 
 `ifdef VERILATOR
 	DifftestInstrCommit DifftestInstrCommit(
@@ -34,12 +54,12 @@ module core import common::*;(
 		.valid              (valid),
 		.pc                 (pc_delay),
 		.instr              (order),
-		.skip               (0),
+		.skip               (skip),
 		.isRVC              (0),
 		.scFailed           (0),
-		.wen                (RF_W),
-		.wdest              ({3'b0,rdc}),
-		.wdata              (mux2_out)
+		.wen                (RF_W_tem2),
+		.wdest              ({3'b0,rdc_tem2}),
+		.wdata              (rd_tem2)
 	);
 
 	DifftestArchIntRegState DifftestArchIntRegState (

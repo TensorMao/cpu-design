@@ -79,22 +79,29 @@ module decoder(
     assign auipc=(op==7'b0010111 );
     assign ld=(op==7'b0000011)&&(func3==3'b011);
     assign sd=(op==7'b0100011)&&(func3==3'b011);
-    //Control 
-
-   /* assign RD_M[0]=jal|jalr|auipc;
-    assign RD_M[1]=lui|auipc;
-    assign RD_M[2]=ld;*/
-
-    /*assign SEXT_M[0]=auipc|lui|jal;
-    assign SEXT_M[1]=beq|bne|bge|blt|bltu|bgeu|jal;
-    assign SEXT_M[2]=addi|andi|ori|xori|jalr|sd|ld;*/
     
-    //assign ALUB_M=addi|andi|ori|xori|jalr|sd|ld;
+    //word
+    logic addiw,addw,slliw,sllw,srliw, srlw,sraiw, sraw, subw;
+    assign addiw=(op==7'b0011011)&&(func3==3'b0);
+    assign addw=(op==7'b0111011)&&(func3==3'b0)&&(func7==7'b0);
+    assign slliw=(op==7'b0011011)&&(func3==3'b001)&&(func6==6'b0);
+    assign sllw=(op==7'b0111011)&&(func3==3'b001)&&(func7==7'b0);
+    assign srliw=(op==7'b0011011)&&(func3==3'b101)&&(func6==6'b0);
+    assign srlw=(op==7'b0111011)&&(func3==3'b101)&&(func7==7'b0);
+    assign sraiw=(op==7'b0011011)&&(func3==3'b101)&&(func6==6'b010000);
+    assign sraw=(op==7'b0111011)&&(func3==3'b101)&&(func7==7'b0100000);
+    assign subw=(op==7'b0111011)&&(func3==3'b0)&&(func7==7'b0100000);
 
-    /*assign ALU_C[0]=sub|oru|ori;
-    assign ALU_C[1]=andu|oru|andi|ori;
-    assign ALU_C[2]=xoru|xori;*/
-    assign RF_W=add|sub|andu|oru|xoru|addi|andi|ori|xori|jalr|jal|lui|auipc|slt|sltu|slti|sltiu|sll|slli|srl|srli|sra|srai;
+    //mutiple divide
+    logic mul,div,divu,rem,remu;
+    assign mul=(op==7'b0110011)&&(func3==3'b0)&&(func7==7'b0000001);
+    assign div=(op==7'b0110011)&&(func3==3'b100)&&(func7==7'b0000001);
+    assign divu=(op==7'b0110011)&&(func3==3'b101)&&(func7==7'b0000001);
+    assign rem=(op==7'b0110011)&&(func3==3'b110)&&(func7==7'b0000001);
+    assign remu=(op==7'b0110011)&&(func3==3'b111)&&(func7==7'b0000001);
+
+    //Control 
+    assign RF_W=add|sub|andu|oru|xoru|addi|andi|ori|xori|jalr|jal|lui|auipc|slt|sltu|slti|sltiu|sll|slli|srl|srli|sra|srai|addiw|addw|slliw|sllw|srliw|srlw|sraiw|sraw|subw|mul|div|divu|rem|remu;
     assign DM_R=ld;
     assign DM_W=sd;
     assign skip=PC_M[0]||jalr;
@@ -105,24 +112,31 @@ module decoder(
     assign rs2c=instr[24:20];
 
     always_comb begin :ALU_C_blk
-        if(add|addi|jalr|sd|ld)     ALU_C=0;//+
-        else if(sub)                ALU_C=1;//-
-        else if(andu|andi)          ALU_C=2;//&
-        else if(oru|ori)            ALU_C=3;//|
-        else if(xoru|xori)          ALU_C=4;//^
-        else if(slt|slti)           ALU_C=5;//signed <
-        else if(sltu|sltiu)         ALU_C=6;//unsigned <
-        else if(sll|slli)           ALU_C=7;// <<
-        else if(srl|srli)           ALU_C=8;// >>
-        else if(sra|srai)           ALU_C=9;//>>>
-        else                        ALU_C=0;
+        if(add|addi|jalr|sd|ld)  ALU_C=0;//+
+        else if(sub)                 ALU_C=1;//-
+        else if(andu|andi)           ALU_C=2;//&
+        else if(oru|ori)             ALU_C=3;//|
+        else if(xoru|xori)           ALU_C=4;//^
+        else if(slt|slti)            ALU_C=5;//signed <
+        else if(sltu|sltiu)          ALU_C=6;//unsigned <
+        else if(sll|slli)            ALU_C=7;// <<
+        else if(srl|srli)            ALU_C=8;// >>
+        else if(sra|srai)            ALU_C=9;//>>>
+        //word
+        else if(addiw|addw)          ALU_C=10;
+        else if(subw)                ALU_C=11;
+        else if(slliw|sllw)          ALU_C=12;
+        else if(srliw|srlw)          ALU_C=13;
+        else if(sraiw|sraw)          ALU_C=14;
+        else if(mul)                 ALU_C=15;
+        else                         ALU_C=0;
     end
 
     always_comb begin :SEXT_M_blk
-        if(auipc|lui)                                       SEXT_M=1;//32
-        else if(beq|bne|bge|blt|bltu|bgeu)                  SEXT_M=2;//13
-        else if(jal)                                        SEXT_M=3;//21
-        else if(addi|andi|ori|xori|jalr|sd|ld|slti|sltiu)   SEXT_M=4;//12
+        if(auipc|lui)                                               SEXT_M=1;//32
+        else if(beq|bne|bge|blt|bltu|bgeu)                          SEXT_M=2;//13
+        else if(jal)                                                SEXT_M=3;//21
+        else if(addi|andi|ori|xori|jalr|sd|ld|slti|sltiu|addiw)     SEXT_M=4;//12
         else  SEXT_M=0;
     end
 
@@ -133,9 +147,9 @@ module decoder(
     end
 
     always_comb begin : ALUB_M_blk
-       if(addi|andi|ori|xori|jalr|sd|ld) ALUB_M=1;
-       else if(slli|srli|srai) ALUB_M=2;
-       else ALUB_M=0;       
+       if(addi|andi|ori|xori|jalr|sd|ld|addiw|sltiu) ALUB_M=1;//imm
+       else if(slli|srli|srai|slliw|srliw|sraiw) ALUB_M=2;//shamt
+       else ALUB_M=0;       //rs2
     end
 
     always_comb begin : RD_M_blk
