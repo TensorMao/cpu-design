@@ -15,8 +15,9 @@ module core import common::*;(
 	input  logic       trint, swint, exint
 );
 	/* TODO: Add your CPU-Core here. */
-	cpu cpu(clk,reset,ireq,iresp,dreq,dresp,pc_delay,order,RF_W,rdc,rd,regarray,valid,skip);
-	logic [31:0] order;
+	cpu cpu(clk,reset,ireq,iresp,dreq,dresp,pc_delay,instr,RF_W,rdc,rd,regarray,valid,skip);
+	
+	logic [31:0] instr;
     logic RF_W;
     logic [4:0]rdc;
     logic [63:0] rd;
@@ -25,24 +26,31 @@ module core import common::*;(
 	logic  [63:0]pc_delay;
 	logic skip;
 	
-
-	logic RF_W_tem1;logic RF_W_tem2;
-	always_ff @(posedge clk ) begin
+	
+	logic RF_W_tem1,RF_W_tem2;
+	always_ff @(posedge clk ) begin:RF_W_show
 		RF_W_tem2 <= RF_W_tem1;
 		RF_W_tem1 <= RF_W;
 	end
 
-	logic[4:0] rdc_tem1;logic[4:0]  rdc_tem2;
-	always_ff @(posedge clk ) begin
+	logic[4:0] rdc_tem1,rdc_tem2;
+	always_ff @(posedge clk ) begin:rdc_show
 		rdc_tem2 <= rdc_tem1;
 		rdc_tem1 <= rdc;
 	end
 
-	logic[63:0] rd_tem1;logic[63:0]  rd_tem2;
-	always_ff @(posedge clk ) begin
+	logic[63:0] rd_tem1, rd_tem2;
+	always_ff @(posedge clk ) begin:rd_show
 		rd_tem2 <= rd_tem1;
 		rd_tem1 <= rd;
 	end
+
+	logic [31:0]instr_tem;
+	always_ff@(posedge clk)begin:instr_show
+        if(iresp.data_ok)instr_tem<=instr;
+        else instr_tem<=instr_tem;
+    end
+
 
 
 
@@ -53,7 +61,7 @@ module core import common::*;(
 		.index              (0),
 		.valid              (valid),
 		.pc                 (pc_delay),
-		.instr              (order),
+		.instr              (instr_tem),
 		.skip               (skip),
 		.isRVC              (0),
 		.scFailed           (0),
