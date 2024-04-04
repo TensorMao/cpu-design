@@ -6,9 +6,6 @@
 
 `endif
 module pcnxt(
-    input clk,
-    input rst,
-    
     input instr_valid,
     input [63:0]pc_in,
     input redirect_valid,

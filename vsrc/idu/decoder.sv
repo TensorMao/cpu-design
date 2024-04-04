@@ -14,7 +14,7 @@ module decoder(
     output logic[2:0]RD_M,
     output logic[1:0]ALUB_M, 
     output logic[2:0] SEXT_M,
-    output logic[3:0]ALU_C ,
+    output logic[3:0]ALU_C,
     output logic RF_W,
     output logic DM_R,
     output logic DM_W,
@@ -38,7 +38,7 @@ module decoder(
     logic R_type,add,sub,andu,oru,xoru;
     assign R_type= (op==7'b0110011);
     assign add= R_type && (func3==3'b000) && (func7==7'b0 );
-    assign sub= R_type && (func3==3'b000)&&(func7==7'b0100000  );
+    assign sub= R_type && (func3==3'b000)&&(func7==7'b0100000);
     assign andu=R_type && (func3==3'b111)&&(func7==7'b0 );
     assign oru= R_type && (func3==3'b110)&&(func7==7'b0 );
     assign xoru=R_type && (func3==3'b100)&&(func7==7'b0 );

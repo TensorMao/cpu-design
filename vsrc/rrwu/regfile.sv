@@ -24,6 +24,7 @@ module regfile(
  reg [63:0] temprs2;
  logic isequal_rdrs1;
  logic isequal_rdrs2;
+ //write
  always @ (posedge clk)begin
     isequal_rdrs1=0;
     isequal_rdrs2=0;
@@ -51,6 +52,8 @@ module regfile(
     end
  end
  end
+
+ //read
 
  assign  rs1=isequal_rdrs1?temprs1:regarray[rs1c];
  assign  rs2=isequal_rdrs2?temprs2:regarray[rs2c];
