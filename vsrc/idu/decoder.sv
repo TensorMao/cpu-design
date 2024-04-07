@@ -1,6 +1,7 @@
 `ifndef __DECODER_SV
 `define __DECODER_SV
 `ifdef VERILATOR
+`include "param.sv"
 
 `else
 
@@ -13,8 +14,10 @@ module decoder(
     output logic[1:0]PC_M,
     output logic[2:0]RD_M,
     output logic[1:0]ALUB_M, 
+    output logic ALUA_M, 
+    output logic BRsel,
     output logic[2:0] SEXT_M,
-    output logic[3:0]ALU_C,
+    output logic[`ALUOP_WIDTH-1:0]ALUop ,
     output logic RF_W,
     output logic DM_R,
     output logic DM_W,
@@ -23,8 +26,17 @@ module decoder(
     output logic [4:0]rs1c,
     output logic [4:0]rs2c,
     output logic sign,
-    output logic[5:0]shamt
+    output logic[5:0]shamt,
+    output logic MULDIVREM
     );
+
+    typedef enum { 
+        s1, //ifetch
+        s2, //decode
+        s3, //execute
+        s4, //memrw
+        s5, //writeback
+    } state_t;
 
     logic [5:0]func;    assign  func=instr[5:0];
     logic [6:0] op;     assign  op= instr[6:0];
@@ -101,35 +113,42 @@ module decoder(
     assign remu=(op==7'b0110011)&&(func3==3'b111)&&(func7==7'b0000001);
 
     //Control 
-    assign RF_W=add|sub|andu|oru|xoru|addi|andi|ori|xori|jalr|jal|lui|auipc|slt|sltu|slti|sltiu|sll|slli|srl|srli|sra|srai|addiw|addw|slliw|sllw|srliw|srlw|sraiw|sraw|subw|mul|div|divu|rem|remu;
+    assign RF_W=add|sub|andu|oru|xoru|addi|andi|ori|xori|jalr|jal|lui|auipc|slt|sltu|slti|sltiu|sll|slli|srl|srli|sra|srai|addiw|addw|slliw|sllw|srliw|srlw|sraiw|sraw|subw|div|divu|rem|remu|mul;
     assign DM_R=ld;
     assign DM_W=sd;
     assign skip=PC_M[0]||jalr;
+    assign MULDIVREM=mul|div|divu|rem|remu;
 
     //rdc,rs1c,rs2c
     assign rdc= instr[11:7];
     assign rs1c=instr[19:15];
     assign rs2c=instr[24:20];
 
-    always_comb begin :ALU_C_blk
-        if(add|addi|jalr|sd|ld)  ALU_C=0;//+
-        else if(sub)                 ALU_C=1;//-
-        else if(andu|andi)           ALU_C=2;//&
-        else if(oru|ori)             ALU_C=3;//|
-        else if(xoru|xori)           ALU_C=4;//^
-        else if(slt|slti)            ALU_C=5;//signed <
-        else if(sltu|sltiu)          ALU_C=6;//unsigned <
-        else if(sll|slli)            ALU_C=7;// <<
-        else if(srl|srli)            ALU_C=8;// >>
-        else if(sra|srai)            ALU_C=9;//>>>
+    always_comb begin :ALUop_blk
+        if(add|addi|sd|ld|auipc)  ALUop=0;//+
+        else if(sub)                 ALUop=1;//-
+        else if(andu|andi)           ALUop=2;//&
+        else if(oru|ori)             ALUop=3;//|
+        else if(xoru|xori)           ALUop=4;//^
+        else if(slt|slti)            ALUop=5;//signed <
+        else if(sltu|sltiu)          ALUop=6;//unsigned <
+        else if(sll|slli)            ALUop=7;// <<
+        else if(srl|srli)            ALUop=8;// >>
+        else if(sra|srai)            ALUop=9;//>>>
         //word
-        else if(addiw|addw)          ALU_C=10;
-        else if(subw)                ALU_C=11;
-        else if(slliw|sllw)          ALU_C=12;
-        else if(srliw|srlw)          ALU_C=13;
-        else if(sraiw|sraw)          ALU_C=14;
-        else if(mul)                 ALU_C=15;
-        else                         ALU_C=0;
+        else if(addiw|addw)          ALUop=10;
+        else if(subw)                ALUop=11;
+        else if(slliw|sllw)          ALUop=12;
+        else if(srliw|srlw)          ALUop=13;
+        else if(sraiw|sraw)          ALUop=14;
+        else if(mul)                 ALUop=15;
+        else if(div)                 ALUop=16;
+        else if(divu)                ALUop=17;
+        else if(rem)                 ALUop=18;
+        else if(remu)                ALUop=19;
+        else if(lui)                 ALUop=20;
+        else if(jal|jalr)            ALUop=21;//pc+4
+        else                         ALUop=0;
     end
 
     always_comb begin :SEXT_M_blk
@@ -146,18 +165,30 @@ module decoder(
         else PC_M=0;
     end
 
+    always_comb begin : ALUA_M_blk
+        if(auipc) ALUA_M=1;
+        else ALUA_M=0;
+    end
+
     always_comb begin : ALUB_M_blk
-       if(addi|andi|ori|xori|jalr|sd|ld|addiw|sltiu) ALUB_M=1;//imm
+       if(addi|andi|ori|xori|lui|sd|ld|addiw|sltiu|auipc|slti) ALUB_M=1;//imm
        else if(slli|srli|srai|slliw|srliw|sraiw) ALUB_M=2;//shamt
+       else if(jal|jalr) ALUB_M=3;//pc
        else ALUB_M=0;       //rs2
     end
 
     always_comb begin : RD_M_blk
-        if(jal|jalr) RD_M=1;
-        else if(lui) RD_M=2;
-        else if(auipc) RD_M=3;
-        else if (ld) RD_M=4;
+        if (ld) RD_M=4;
+        else if (div|divu) RD_M=5;
+        else if (rem|remu) RD_M=6;
+        else if (mul) RD_M=7;
         else RD_M=0;
+    end
+
+    always_comb begin : BRsel_blk
+        if(jal) BRsel=0;
+        else if(jalr)BRsel=1;
+        else BRsel=0;
     end
 
 

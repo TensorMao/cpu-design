@@ -8,8 +8,8 @@
 
 module pcmux#(parameter N = 2)(
 
-    input [63:0] input_1,//jal
-    input [63:0] input_2,//jalr
+    input [63:0] input_1,
+    input [63:0] input_2,
     input [63:0] pc,
     input [N-1:0] select,
     output logic [63:0] pcmux_out

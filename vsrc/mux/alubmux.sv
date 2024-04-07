@@ -11,6 +11,7 @@ module alubmux(
     input [63:0] rs2_out,
     input [63:0]sext_num,
     input [63:0]shamt,
+    input [63:0] pc,
     output logic[63:0] alubmux_out
 
     );
@@ -19,6 +20,7 @@ module alubmux(
             0:alubmux_out=rs2_out;
             1:alubmux_out=sext_num;
             2:alubmux_out=shamt;
+            3:alubmux_out=pc;
             default:alubmux_out=rs2_out;
         endcase
     end

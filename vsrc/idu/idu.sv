@@ -1,6 +1,7 @@
 `ifndef __IDU_SV
 `define __IDU_SV
 `ifdef VERILATOR
+`include "param.sv"
 `include "idu/decoder.sv"
 `include "idu/sext.sv"
 
@@ -10,70 +11,59 @@
 module idu(
     input clk,
     input rst,
-    input idu_valid,
     input [31:0] instr,
     input [2:0]ZF,
-    output logic [1:0]PC_M,
-    output logic[2:0]RD_M,
-    output logic[1:0]ALUB_M, 
-    output logic[3:0]ALU_C ,
-    output logic RF_W,
+    input idu_valid,
+    input dstall,
+    output [1:0]PC_M,
+    output [2:0]RD_M,
+    output [1:0]ALUB_M, 
+    output ALUA_M,
+    output BRsel,
+    output [`ALUOP_WIDTH-1:0]ALUop ,
+    output RF_W,
     output logic DM_R,
     output logic DM_W,
-    output logic skip,
-    output logic [4:0]rdc,
-    output logic [4:0]rs1c,
+    output skip,
+    output [4:0]rdc,
+    output [4:0]rs1c,
     output logic [4:0]rs2c,
-    output logic sign,
-    output logic[63:0] sext_num,
-    output logic[5:0] shamt,
-    output logic idu_finish
+    output sign,
+    output [63:0] sext_num,
+    output [5:0] shamt,
+    output muldiv
+
     );
 
     logic [2:0] SEXT_M;
-    /*
-    logic RF_W_t,read_data_ok;
-    logic [2:0]RD_M_t;
-    logic [4:0] rdc_t;
-    logic [4:0] rdc_reg;
-    assign read_data_ok= dreq.strobe==0&&dresp.data_ok;
-    assign RF_W=read_data_ok||RF_W_t; 
-    assign RD_M=read_data_ok?4:RD_M_t;
-    assign rdc=read_data_ok?rdc_reg:rdc_t;
+    logic RF_W_t,RF_W_reg,DM_R_t,DM_W_t;
+    logic [2:0]RD_M_t,RD_M_reg;
+    logic [4:0] rdc_t,rs2c_t;
+    logic [4:0] rdc_reg,rs2c_reg;
+    assign RF_W=dstall||RF_W_reg; 
+    assign RD_M=dstall?4:RD_M_reg;
+    assign rs2c=(DM_W)?rs2c_reg:rs2c_t;
+    assign rdc=rdc_reg;
     always_ff@(posedge clk)begin
-        if(DM_R) rdc_reg<=instr[11:7];
-    end
-    */
-    logic [1:0]PC_M_tem;
-    logic [2:0]RD_M_tem,SEXT_M_tem;
-    logic [1:0]ALUB_M_tem;
-    logic [3:0]ALU_C_tem;
-    logic RF_W_tem,DM_R_tem,DM_W_tem,skip_tem;    
-    logic [4:0]rdc_tem,rs1c_tem,rs2c_tem;
-    logic[5:0] shamt_tem;
-    logic[63:0] sext_num_tem;
-
-    decoder idu_decoder(instr,ZF,PC_M_tem,RD_M_tem,ALUB_M_tem,SEXT_M_tem,ALU_C_tem,RF_W_tem,DM_R_tem,DM_W_tem,skip_tem,rdc_tem,rs1c_tem,rs2c_tem,sign,shamt_tem);
-    sext idu_sext(instr,SEXT_M_tem,DM_W,sext_num_tem);
-
-    always_ff@(posedge clk,posedge rst)begin
-        if(idu_valid)begin
-            PC_M<=PC_M_tem;
-            RD_M<=RD_M_tem;
-            ALUB_M<=ALUB_M_tem;
-            ALU_C<=ALU_C_tem;
-            RF_W<=RF_W_tem;
-            DM_R<=DM_R_tem;
-            DM_W<=DM_W_tem;
-            skip<=skip_tem;
-            rdc<=rdc_tem;
-            rs1c<=rs1c_tem;
-            rs2c<=rs2c_tem;
-            shamt<=shamt_tem;      
-            sext_num<=sext_num_tem;  
-            idu_finish<=1;   
+        if(rst)begin
+            DM_R<=0;
+            DM_W<=0;
+            RD_M_reg<=0;
+            RF_W_reg<=0;
         end
+        if(idu_valid)begin
+            RD_M_reg<=RD_M_t;
+            RF_W_reg<=RF_W_t;
+            rdc_reg<=instr[11:7];
+            rs2c_reg<=rs2c_t;
+            DM_R<=DM_R_t;
+            DM_W<=DM_W_t;
+        end
+        
     end
+
+    decoder idu_decoder(instr,ZF,PC_M,RD_M_t,ALUB_M,ALUA_M,BRsel,SEXT_M,ALUop,RF_W_t,DM_R_t,DM_W_t,skip,rdc_t,rs1c,rs2c_t,sign,shamt,muldiv);
+    sext idu_sext(instr,SEXT_M,DM_W_t,sext_num);
 
     
 

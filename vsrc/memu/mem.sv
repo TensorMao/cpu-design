@@ -27,6 +27,7 @@ module mem import common::*;(
         end
         else if(DM_W)begin
             dreq.valid<=1;
+            dreq.data<=0;
             dreq.addr<=addr;
             dreq.size<=3'b011;
             dreq.strobe<=8'b11111111;
