@@ -30,8 +30,7 @@ module idu(
     output logic [4:0]rs2c,
     output sign,
     output [63:0] sext_num,
-    output [5:0] shamt,
-    output muldiv
+    output [5:0] shamt
 
     );
     logic [2:0] SEXT_M;
@@ -61,7 +60,7 @@ module idu(
         
     end
 
-    decoder idu_decoder(instr,ZF,PC_M,RD_M_t,ALUB_M,ALUA_M,BRsel,SEXT_M,ALUop,RF_W_t,DM_R_t,DM_W_t,skip,rdc_t,rs1c,rs2c_t,sign,shamt,muldiv);
+    decoder idu_decoder(instr,ZF,PC_M,RD_M_t,ALUB_M,ALUA_M,BRsel,SEXT_M,ALUop,RF_W_t,DM_R_t,DM_W_t,skip,rdc_t,rs1c,rs2c_t,sign,shamt);
     sext idu_sext(instr,SEXT_M,DM_W_t,sext_num);
 
     

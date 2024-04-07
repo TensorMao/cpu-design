@@ -26,8 +26,7 @@ module decoder(
     output logic [4:0]rs1c,
     output logic [4:0]rs2c,
     output logic sign,
-    output logic[5:0]shamt,
-    output logic MULDIVREM
+    output logic[5:0]shamt
     );
 
     logic [5:0]func;    assign  func=instr[5:0];
