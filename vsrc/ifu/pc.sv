@@ -15,19 +15,16 @@ module pc(
   
    );
 
-    logic [63:0] pc_reg;
-    assign pc_out=pc_reg;
-
     always_ff @(posedge clk,posedge rst) begin
         if (rst) begin
-           pc_reg <= 64'h80000000;
+           pc_out <= 64'h80000000;
         end
         else if(stall) begin
-			pc_reg <=  pc_reg;
+			pc_out <=  pc_out;
 		end 
         else begin
-            pc_delay <= pc_reg;
-			pc_reg  <= pc_in;
+            pc_delay <= pc_out;
+			pc_out  <= pc_in;
 		end
     end
 

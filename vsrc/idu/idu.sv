@@ -62,6 +62,37 @@ module idu(
         
     end
 
+     typedef enum { 
+        s1, //ifetch
+        s2, //decode
+        s3, //execute
+        s4, //memrw
+        s5, //writeback
+    } state_t;
+    state_t state,nxt_state;
+    always_ff @( posedge clk ) begin
+        if(rst) state<=s1;
+        else state <= nxt_state;  
+    end
+
+    always_comb begin : state_change
+        case(state)
+        s1:begin
+            if(ifu_finish) nxt_state=s2;
+            else nxt_state=s1;
+        end
+        s2:begin
+            nxt_state=s3;
+        end
+        s3:begin
+            if(exu_finish) nxt_state=s5;
+        end
+        s5:begin
+            nxt_state=s1;
+        end
+        endcase
+    end
+
     decoder idu_decoder(instr,ZF,PC_M,RD_M_t,ALUB_M,ALUA_M,BRsel,SEXT_M,ALUop,RF_W_t,DM_R_t,DM_W_t,skip,rdc_t,rs1c,rs2c_t,sign,shamt,muldiv);
     sext idu_sext(instr,SEXT_M,DM_W_t,sext_num);
 

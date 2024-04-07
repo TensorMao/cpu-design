@@ -30,13 +30,6 @@ module decoder(
     output logic MULDIVREM
     );
 
-    typedef enum { 
-        s1, //ifetch
-        s2, //decode
-        s3, //execute
-        s4, //memrw
-        s5, //writeback
-    } state_t;
 
     logic [5:0]func;    assign  func=instr[5:0];
     logic [6:0] op;     assign  op= instr[6:0];
@@ -66,7 +59,7 @@ module decoder(
     assign jalr= (op==7'b1100111)&& (func3 ==3'b0);
     assign jal = (op==7'b1101111);
 
-    logic beq,bne,blt,bge,bltu,bgeu,slt,sltu,slti,sltiu,sll,slli,srl,srli,sra,srai;
+/* logic beq,bne,blt,bge,bltu,bgeu,slt,sltu,slti,sltiu,sll,slli,srl,srli,sra,srai;
     assign beq =  (op==7'b1100011) && (func3==3'b000);
     assign bne =  (op==7'b1100011) && (func3==3'b001);
     assign blt =  (op==7'b1100011) && (func3==3'b100);
@@ -111,6 +104,7 @@ module decoder(
     assign divu=(op==7'b0110011)&&(func3==3'b101)&&(func7==7'b0000001);
     assign rem=(op==7'b0110011)&&(func3==3'b110)&&(func7==7'b0000001);
     assign remu=(op==7'b0110011)&&(func3==3'b111)&&(func7==7'b0000001);
+
 
     //Control 
     assign RF_W=add|sub|andu|oru|xoru|addi|andi|ori|xori|jalr|jal|lui|auipc|slt|sltu|slti|sltiu|sll|slli|srl|srli|sra|srai|addiw|addw|slliw|sllw|srliw|srlw|sraiw|sraw|subw|div|divu|rem|remu|mul;
@@ -190,8 +184,8 @@ module decoder(
         else if(jalr)BRsel=1;
         else BRsel=0;
     end
-
-
+*/
+  
 
 
 
