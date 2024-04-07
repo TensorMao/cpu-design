@@ -1,6 +1,7 @@
 `ifndef __CPU_SV
 `define __CPU_SV
 `ifdef VERILATOR
+`include "param.sv"
 `include "include/common.sv"
 `include "rrwu/rrwu.sv"
 `include "exu/exu.sv"
@@ -11,7 +12,7 @@
 `include "mux/pcmux.sv"
 `include "mux/rdmux.sv"
 `include "mux/alubmux.sv"
-
+`include "mux/aluamux.sv"
 `else
 
 `endif
@@ -34,62 +35,37 @@ module cpu import common::*; (
     output logic skip
 );
     logic [31:0] instr;
-    logic DM_R,DM_W,dstall,sign;
+    logic DM_R,DM_W,dstall,sign,ALUA_M;
     logic [1:0]PC_M,ALUB_M;
     logic [2:0]RD_M,ZF;
-    logic [3:0]ALU_C;
+    logic [`ALUOP_WIDTH-1:0]ALUop;
     logic [4:0]rs1c,rs2c;
     logic [5:0] shamt;
-    logic [63:0] sext_num,br_out,alu_out,dmem_out,alubmux_out,pcmux_out,rs1_out,rs2_out,pc_out;
+    logic [63:0] sext_num,br_out,alu_out,dmem_out,alubmux_out,aluamux_out,pcmux_out,rs1_out,rs2_out,pc_out;
     assign dstall= dreq.strobe==0&&dresp.data_ok;
     /*logic dwaits;assign dwaits=dreq.valid && ~dresp.data_ok;*/    
-    logic valid_tem;
+    logic valid_tem1 ,valid_tem2;
     //TODO
     always_ff@(posedge clk)begin
-        valid<=valid_tem;
-        valid_tem<=(iresp.data_ok&&~DM_R)||(dresp.data_ok&&dreq.strobe==0);
+        valid<=valid_tem2;
+        valid_tem2<=(exu_data_ok&&~DM_R)||(dresp.data_ok&&dreq.strobe==0);
     end
 
-    
-    ifu cpu_ifu (clk,rst,state,ireq,iresp,skip,pcmux_out,pc_out,pc_delay,instr,instr_sh);
-    idu cpu_idu(clk,instr,ZF,dstall,PC_M,RD_M,ALUB_M,ALU_C,RF_W,DM_R,DM_W,skip,rdc,rs1c,rs2c,sign,sext_num,shamt);
-    exu cpu_exu(clk,ALU_C,pc_out,sext_num,rs1_out,alubmux_out,alu_out,br_out);
+    logic ifu_valid , muldiv,exu_valid,exu_data_ok,ifu_finish,BRsel;
+    logic [63:0]div_data,rem_data,mul_data;
+    assign ifu_valid=~exu_valid;
+    ifu cpu_ifu (clk,rst,ifu_valid,ireq,iresp,skip,br_out,pc_out,pc_delay,instr,instr_sh,ifu_finish);
+    idu cpu_idu(clk,exu_data_ok,instr,ZF,iresp.data_ok,dstall,PC_M,RD_M,ALUB_M,ALUA_M,BRsel,ALUop,RF_W,DM_R,DM_W,skip,rdc,rs1c,rs2c,sign,sext_num,shamt,muldiv);
+    exu cpu_exu(clk,rst,ifu_finish,BRsel,ALUop,pc_out,sext_num,aluamux_out,alubmux_out,alu_out,br_out,exu_valid,exu_data_ok,div_data,rem_data,mul_data);
     rrwu cpu_rrwu(clk,rst,sign,RF_W,RD_M,rs1c,rs2c,rdc,rdmux_out,rs1_out,rs2_out,ZF,regarray_out);
     mem cpu_mem (clk,DM_R,DM_W,alu_out,rs2_out,dreq,dresp,dmem_out);
     
-    pcmux cpu_pcmux(br_out,{alu_out[63:1],1'b0},pc_out,PC_M,pcmux_out);
-    rdmux cpu_rdmux(RD_M, alu_out,pc_out+4,sext_num,br_out,dmem_out,rdmux_out);
-    alubmux cpu_alubmux(ALUB_M,rs2_out, sext_num,{58'b0,shamt},alubmux_out);
+    //pcmux cpu_pcmux(br_out,pc_out,PC_M,pcmux_out);
+    rdmux cpu_rdmux(RD_M, alu_out,dmem_out,div_data,rem_data,mul_data,rdmux_out);
+    alubmux cpu_alubmux(ALUB_M,rs2_out, sext_num,{58'b0,shamt},pc_out,alubmux_out);
+    aluamux cpu_aluamux(ALUA_M,rs1_out,pc_out,aluamux_out);
 
-    //state control
 
-    typedef enum {
-    IFETCH =1,
-    EXECUTE=2,
-    MEM_ACCESS =3
-    } state_type;
-    state_type state;
-   logic finish;
-
-    always_ff@(posedge clk,posedge rst)begin
-        if(rst)state<=IFETCH;
-        else begin
-            case (state)
-                IFETCH: begin
-                    if(iresp.data_ok&&(ALU_C==15))state<=EXECUTE;
-                end
-                EXECUTE: begin
-                    if(finish)state<=IFETCH;
-                end
-                MEM_ACCESS:begin
-                    if(dresp.data_ok)state<= IFETCH;
-
-                end
-
-            endcase  
-        end
-        
-    end
 
 endmodule
 

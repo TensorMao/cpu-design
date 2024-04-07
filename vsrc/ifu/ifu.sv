@@ -10,7 +10,7 @@
 module ifu import common::*;(
     input clk,
     input rst,
-    input [31:0] state,
+    input ifu_valid,
     output ibus_req_t  ireq,
     input  ibus_resp_t iresp,
     input redirect_valid,
@@ -18,7 +18,8 @@ module ifu import common::*;(
     output logic [63:0] pc_out,
     output logic [63:0] pc_delay,
     output logic [31:0] instr,
-    output logic [31:0] instr_sh
+    output logic [31:0] instr_sh,
+    output logic ifu_finish
 
     );
     logic stall;
@@ -26,10 +27,11 @@ module ifu import common::*;(
     logic [31:0]instr_reg;
     assign instr_sh=instr_reg;
     
-    assign ireq.valid=1;
+    assign ireq.valid=ifu_valid;
     assign ireq.addr=pc_out;
     assign instr=iresp.data;
-    assign stall =ireq.valid && ~iresp.data_ok;
+    assign stall = ~iresp.data_ok;
+    assign ifu_finish=iresp.data_ok;
 
     pc ifu_pc(clk,rst,stall,pc_nxt,pc_out,pc_delay);
     pcnxt ifu_pcnxt(clk,rst,iresp.data_ok,pc_out,redirect_valid,pc_target,pc_nxt);

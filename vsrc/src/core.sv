@@ -45,13 +45,6 @@ module core import common::*;(
 		rd_tem1 <= rd;
 	end
 
-	logic [31:0]instr_tem;
-	always_ff@(posedge clk)begin:instr_show
-        if(iresp.data_ok)instr_tem<=instr;
-        else instr_tem<=instr_tem;
-    end
-
-
 
 
 `ifdef VERILATOR
@@ -61,7 +54,7 @@ module core import common::*;(
 		.index              (0),
 		.valid              (valid),
 		.pc                 (pc_delay),
-		.instr              (instr_tem),
+		.instr              (instr),
 		.skip               (skip),
 		.isRVC              (0),
 		.scFailed           (0),

@@ -1,7 +1,7 @@
 `ifndef __ALU_SV
 `define __ALU_SV
 `ifdef VERILATOR
-
+`include "param.sv"
 `else
 
 `endif
@@ -10,12 +10,12 @@
 module alu(
   input  [63:0] A,
   input  [63:0] B,
-  input  [3:0] ALU_C,
+  input  [`ALUOP_WIDTH-1:0] ALUop,
   output logic [63:0] data
   );
 
   always_comb begin
-    case (ALU_C)
+    case (ALUop)
       0: data = A + B;
       1: data = A - B;
       2: data = A & B;
@@ -31,7 +31,9 @@ module alu(
       12:data = {{32{{A<<B[4:0]}[31]}},{A<<B[4:0]}[31:0]};
       13:data = {{32{{A[31:0]>>B[4:0]}[31]}},{A[31:0]>>B[4:0]}[31:0]};
       14:data = {{32{{$signed(A[31:0])>>>B[4:0]}[31]}},{$signed(A[31:0])>>>B[4:0]}[31:0]};
-      default: data = 64'd0;
+      20:data = B;
+      21:data = B+4;
+      default: data = 0;
     endcase    
   end
 

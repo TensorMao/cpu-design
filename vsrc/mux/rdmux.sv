@@ -9,20 +9,20 @@
 module rdmux(
     input [2:0]RD_M,
     input [63:0] alu_out,
-    input [63:0] pcadd4,
-    input [63:0] sext_num,
-    input [63:0] br_out,
     input [63:0] dmem_out,
+    input [63:0] div_out,
+    input [63:0] rem_out,
+    input [63:0] mul_out,
     output logic [63:0] rd
 
     );
     always_comb begin
         case(RD_M)
             0:rd=alu_out;
-            1:rd=pcadd4;
-            2:rd=sext_num;
-            3:rd=br_out;
             4:rd=dmem_out;
+            5:rd=div_out;
+            6:rd=rem_out;
+            7:rd=mul_out;
             default:rd=alu_out;
         endcase
     end
