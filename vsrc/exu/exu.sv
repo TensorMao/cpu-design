@@ -19,6 +19,7 @@ module exu(
     input [63:0]sext_num,
     input [63:0]A,
     input [63:0]B,
+    input muldivword,
     output logic[63:0] alu_out,
     output logic[63:0] br_out,
     output logic exu_valid,
@@ -37,8 +38,8 @@ module exu(
 
     alu exu_alu(A,B,ALUop,alu_out_t);  
     br exu_br(BRsel,A,pc,sext_num,br_out);
-    divide exu_divide(clk,rst,(ALUop==16||ALUop==18),div,A,B,div_data_ok,div_data, rem_data);
-    multiply exu_multiply(clk,rst,mul,A,B,mul_data_ok,mul_data);
+    divide exu_divide(clk,rst,(ALUop==16||ALUop==18),muldivword,div,A,B,div_data_ok,div_data, rem_data);
+    multiply exu_multiply(clk,rst,muldivword,mul,A,B,mul_data_ok,mul_data);
 
 
     always@(posedge clk,posedge rst)begin

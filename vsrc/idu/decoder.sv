@@ -26,7 +26,9 @@ module decoder(
     output logic [4:0]rs1c,
     output logic [4:0]rs2c,
     output logic sign,
-    output logic[5:0]shamt
+    output logic[5:0]shamt,
+    output logic [2:0] dreq_size,
+    output logic muldivword
     );
 
     logic [5:0]func;    assign  func=instr[5:0];
@@ -106,27 +108,45 @@ module decoder(
     //mutiple divide
     logic mul,div,divu,rem,remu,mulw,divw,divuw,remw,remuw;
     assign mul=(op==7'b0110011)&&(func3==3'b0)&&(func7==7'b0000001);
+    assign mulw=(op==7'b0111011)&&(func3==3'b0)&&(func7==7'b0000001);
     assign div=(op==7'b0110011)&&(func3==3'b100)&&(func7==7'b0000001);
     assign divu=(op==7'b0110011)&&(func3==3'b101)&&(func7==7'b0000001);
     assign rem=(op==7'b0110011)&&(func3==3'b110)&&(func7==7'b0000001);
     assign remu=(op==7'b0110011)&&(func3==3'b111)&&(func7==7'b0000001);
+    assign divw=(op==7'b0111011)&&(func3==3'b100)&&(func7==7'b0000001);
+    assign divuw=(op==7'b0111011)&&(func3==3'b101)&&(func7==7'b0000001);
+    assign remw=(op==7'b0111011)&&(func3==3'b110)&&(func7==7'b0000001);
+    assign remuw=(op==7'b0111011)&&(func3==3'b111)&&(func7==7'b0000001);
 
-    
-
+    always_comb begin
+        if(mulw|divw|divuw|remw|remuw)muldivword=1;
+        else muldivword=0;
+    end
+   
     //Control 
-    assign RF_W=add|sub|andu|oru|xoru|addi|andi|ori|xori|jalr|jal|lui|auipc|slt|sltu|slti|sltiu|sll|slli|srl|srli|sra|srai|addiw|addw|slliw|sllw|srliw|srlw|sraiw|sraw|subw|div|divu|rem|remu|mul;
-    assign DM_R=ld;
-    assign DM_W=sd;
+    assign RF_W=add|sub|andu|oru|xoru|addi|andi|ori|xori|jalr|jal|lui|auipc|slt|sltu|slti|sltiu|sll|slli|srl|srli|sra|srai|addiw|addw|slliw|sllw|srliw|srlw|sraiw|sraw|subw|div|divu|rem|remu|mul|mulw|divw|divuw|remw|remuw;
+    assign DM_R=ld|lb|lh|lw|lbu|lhu|lwu;
+    assign DM_W=sd|sb|sh|sw;
     assign skip=PC_M[0]||jalr;
-    assign MULDIVREM=mul|div|divu|rem|remu;
 
     //rdc,rs1c,rs2c
     assign rdc= instr[11:7];
     assign rs1c=instr[19:15];
     assign rs2c=instr[24:20];
 
+    always_comb begin :dreq_size_blk
+        if(ld|sd) dreq_size=3'b011;
+        else if(lw|sw) dreq_size=3'b010;
+        else if(lwu) dreq_size=3'b110;
+        else if(lh|sh) dreq_size=3'b001;
+        else if(lhu) dreq_size=3'b101;
+        else if(lb|sb) dreq_size=3'b000;
+        else if(lbu) dreq_size=3'b100;
+        else dreq_size=3'b011;
+    end
+
     always_comb begin :ALUop_blk
-        if(add|addi|sd|ld|auipc)  ALUop=0;//+
+        if(add|addi|sd|sb|sh|sw|ld|lb|lh|lw|lbu|lhu|lwu|auipc)  ALUop=0;//+
         else if(sub)                 ALUop=1;//-
         else if(andu|andi)           ALUop=2;//&
         else if(oru|ori)             ALUop=3;//|
@@ -142,11 +162,11 @@ module decoder(
         else if(slliw|sllw)          ALUop=12;
         else if(srliw|srlw)          ALUop=13;
         else if(sraiw|sraw)          ALUop=14;
-        else if(mul)                 ALUop=15;
-        else if(div)                 ALUop=16;
-        else if(divu)                ALUop=17;
-        else if(rem)                 ALUop=18;
-        else if(remu)                ALUop=19;
+        else if(mul|mulw)            ALUop=15;
+        else if(div|divw)                 ALUop=16;
+        else if(divu|divuw)                ALUop=17;
+        else if(rem|remw)                 ALUop=18;
+        else if(remu|remuw)                ALUop=19;
         else if(lui)                 ALUop=20;
         else if(jal|jalr)            ALUop=21;//pc+4
         else                         ALUop=0;
@@ -156,7 +176,7 @@ module decoder(
         if(auipc|lui)                                               SEXT_M=1;//32
         else if(beq|bne|bge|blt|bltu|bgeu)                          SEXT_M=2;//13
         else if(jal)                                                SEXT_M=3;//21
-        else if(addi|andi|ori|xori|jalr|sd|ld|slti|sltiu|addiw)     SEXT_M=4;//12
+        else if(addi|andi|ori|xori|jalr|sd|sb|sh|sw|ld|lb|lh|lw|lbu|lhu|lwu|slti|sltiu|addiw)     SEXT_M=4;//12
         else  SEXT_M=0;
     end
 
@@ -172,17 +192,17 @@ module decoder(
     end
 
     always_comb begin : ALUB_M_blk
-       if(addi|andi|ori|xori|lui|sd|ld|addiw|sltiu|auipc|slti) ALUB_M=1;//imm
+       if(addi|andi|ori|xori|lui|sd|sb|sh|sw|ld|lb|lh|lw|lbu|lhu|lwu|addiw|sltiu|auipc|slti) ALUB_M=1;//imm
        else if(slli|srli|srai|slliw|srliw|sraiw) ALUB_M=2;//shamt
        else if(jal|jalr) ALUB_M=3;//pc
        else ALUB_M=0;       //rs2
     end
 
     always_comb begin : RD_M_blk
-        if (ld) RD_M=4;
-        else if (div|divu) RD_M=5;
-        else if (rem|remu) RD_M=6;
-        else if (mul) RD_M=7;
+        if (ld|lb|lh|lw|lbu|lhu|lwu) RD_M=4;
+        else if (div|divu|divw|divuw) RD_M=5;
+        else if (rem|remu|remw|remuw) RD_M=6;
+        else if (mul|mulw) RD_M=7;
         else RD_M=0;
     end
 

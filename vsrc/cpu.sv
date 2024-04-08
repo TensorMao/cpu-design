@@ -50,14 +50,15 @@ module cpu import common::*; (
         valid_tem2<=(exu_data_ok&&~DM_R)||(dresp.data_ok&&dreq.strobe==0);
     end
 
-    logic ifu_valid ,exu_valid,exu_data_ok,ifu_finish,BRsel;
+    logic ifu_valid ,exu_valid,exu_data_ok,ifu_finish,BRsel,muldivword;
     logic [63:0]div_data,rem_data,mul_data;
+    logic [2:0] dreq_size;
     assign ifu_valid=~exu_valid;
     ifu cpu_ifu (clk,rst,ifu_valid,ireq,iresp,skip,br_out,pc_out,pc_delay,instr,ifu_finish);
-    idu cpu_idu(clk,exu_data_ok,instr,ZF,iresp.data_ok,dstall,PC_M,RD_M,ALUB_M,ALUA_M,BRsel,ALUop,RF_W,DM_R,DM_W,skip,rdc,rs1c,rs2c,sign,sext_num,shamt);
-    exu cpu_exu(clk,rst,ifu_finish,BRsel,ALUop,pc_out,sext_num,aluamux_out,alubmux_out,alu_out,br_out,exu_valid,exu_data_ok,div_data,rem_data,mul_data);
+    idu cpu_idu(clk,exu_data_ok,instr,ZF,iresp.data_ok,dstall,PC_M,RD_M,ALUB_M,ALUA_M,BRsel,ALUop,RF_W,DM_R,DM_W,skip,rdc,rs1c,rs2c,sign,sext_num,shamt,dreq_size,muldivword);
+    exu cpu_exu(clk,rst,ifu_finish,BRsel,ALUop,pc_out,sext_num,aluamux_out,alubmux_out,muldivword,alu_out,br_out,exu_valid,exu_data_ok,div_data,rem_data,mul_data);
     rrwu cpu_rrwu(clk,rst,sign,RF_W,RD_M,rs1c,rs2c,rdc,rdmux_out,rs1_out,rs2_out,ZF,regarray_out);
-    mem cpu_mem (clk,DM_R,DM_W,alu_out,rs2_out,dreq,dresp,dmem_out);
+    mem cpu_mem (clk,DM_R,DM_W,alu_out,rs2_out,dreq_size,dreq,dresp,dmem_out);
     
     rdmux cpu_rdmux(RD_M, alu_out,dmem_out,div_data,rem_data,mul_data,rdmux_out);
     alubmux cpu_alubmux(ALUB_M,rs2_out, sext_num,{58'b0,shamt},pc_out,alubmux_out);
