@@ -12,52 +12,52 @@
 module exu(  
     input clk,
     input rst,
-    input ifu_finish,
-    input BRsel,
-    input [`ALUOP_WIDTH-1:0]ALUop,
-    input [63:0] pc,
-    input [63:0]sext_num,
+    input exu_valid,
     input [63:0]A,
     input [63:0]B,
+    input [63:0] pc,
+    input [63:0]sext_num,
+    input [`ALUOP_WIDTH-1:0]ALUop,
+    input [`BRSEL_WIDTH-1:0]BRsel,
     output logic[63:0] alu_out,
+   /* output logic [63:0] div_out,
+    output logic [63:0] rem_out,
+    output logic [63:0] mul_out*/
     output logic[63:0] br_out,
-    output logic exu_valid,
-    output logic exu_data_ok,
-    output logic [63:0] div_data,
-    output logic [63:0] rem_data,
-    output logic [63:0] mul_data
+    output logic redirect_valid_out,
+    output logic exu_finish
+    
     );
-    logic div_data_ok,data_ok,div,mul,mul_data_ok;
-    logic [63:0]alu_out_t;
+  //  logic div_data_ok,data_ok,,mul_data_ok;
+    logic alu_data_ok,br_data_ok,redirect_valid;
+    logic [63:0]alu_res,br_res;
+    logic data_ok;
+    assign data_ok=1;
+
+   /* logic div,mul;
     assign div=(ALUop==16||ALUop==17||ALUop==18||ALUop==19);
     assign mul=(ALUop==15);
 
-    assign exu_data_ok=data_ok||div_data_ok||mul_data_ok;
+    assign exu_data_ok=data_ok||div_data_ok||mul_data_ok;*/
 
+    
+    alu exu_alu(A,B,ALUop,alu_res,alu_data_ok);  
+    br exu_br(BRsel,A,pc,sext_num,br_res,redirect_valid,br_data_ok);
+    /*divide exu_divide(clk,rst,(ALUop==16||ALUop==18),div,A,B,div_data_ok,div_data, rem_data);
+    multiply exu_multiply(clk,rst,mul,A,B,mul_data_ok,mul_data);*/
 
-    alu exu_alu(A,B,ALUop,alu_out_t);  
-    br exu_br(BRsel,A,pc,sext_num,br_out);
-    divide exu_divide(clk,rst,(ALUop==16||ALUop==18),div,A,B,div_data_ok,div_data, rem_data);
-    multiply exu_multiply(clk,rst,mul,A,B,mul_data_ok,mul_data);
 
 
     always@(posedge clk,posedge rst)begin
-        if(rst)exu_valid<=0;
-        else begin
-            
-             if(ifu_finish)begin
-                exu_valid<=1;
-                if(~div&&~mul)data_ok<=1;          
+        if(exu_valid)begin
+            if(data_ok)begin
+                alu_out<=alu_res;
+                br_out<=br_res;
+                redirect_valid_out<=redirect_valid;
+                exu_finish<=1;
             end
-             if(exu_data_ok)begin
-                exu_valid<=0;
-                data_ok<=0;
-            end
+            exu_finish<=0;
         end
-    end
-
-    always@(posedge clk,posedge rst)begin
-        alu_out<=alu_out_t;
     end
 
     

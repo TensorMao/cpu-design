@@ -7,14 +7,14 @@
 
 `endif
 module aluamux(
-    input ALUA_M,
+    input ALUAsel,
     input [63:0] rs1_out,
     input [63:0] pc,
     output logic[63:0] aluamux_out
 
     );
     always_comb begin
-        case(ALUA_M)
+        case(ALUAsel)
             0:aluamux_out=rs1_out;
             1:aluamux_out=pc;
             default:aluamux_out=rs1_out;

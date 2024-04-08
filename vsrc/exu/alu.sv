@@ -11,7 +11,8 @@ module alu(
   input  [63:0] A,
   input  [63:0] B,
   input  [`ALUOP_WIDTH-1:0] ALUop,
-  output logic [63:0] data
+  output logic [63:0] data,
+  output logic alu_data_ok
   );
 
   always_comb begin
@@ -32,9 +33,9 @@ module alu(
       13:data = {{32{{A[31:0]>>B[4:0]}[31]}},{A[31:0]>>B[4:0]}[31:0]};
       14:data = {{32{{$signed(A[31:0])>>>B[4:0]}[31]}},{$signed(A[31:0])>>>B[4:0]}[31:0]};
       20:data = B;
-      21:data = B+4;
       default: data = 0;
     endcase    
+    alu_data_ok=1;
   end
 
 endmodule
