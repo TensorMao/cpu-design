@@ -34,13 +34,11 @@ module ifu import common::*;(
     pcnxt ifu_pcnxt(pc_out,redirect_valid,pc_target,pc_nxt);
 
     always_ff @( posedge clk ,posedge rst ) begin 
-        if(ifu_valid)begin
             if(iresp.data_ok)begin
                 instr<=iresp.data;
                 ifu_finish<=1;
             end
             else ifu_finish<=0;
-        end
 
     end
 

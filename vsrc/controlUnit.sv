@@ -32,11 +32,12 @@ module controlUnit(
 
     //state
      typedef enum { 
+        s0,
         s1, //ifetch
         s2, //decode
         s3, //execute
         s4, //memrw
-        s5, //writeback
+        s5//writeback
     } state_t;
     state_t state,nxt_state;
 
@@ -52,6 +53,7 @@ module controlUnit(
 
     always_comb begin : state_change
         case(state)
+        s0: nxt_state=s1;
         s1:begin
             if(ifu_finish) nxt_state=s2;
             else nxt_state=s1;
@@ -75,34 +77,30 @@ module controlUnit(
     logic xori,ori,andi,addi;
     logic jal,jalr;
     logic lui,auipc;
-    always_comb begin : instr_decode
-        op=instr[6:0]; 
-        func3=instr[14:12]; 
-        func7=instr[31:25]; 
-        func6=instr[31:26];
+    assign    op=instr[6:0]; 
+    assign    func3=instr[14:12]; 
+    assign   func7=instr[31:25]; 
+    assign   func6=instr[31:26];
 
-        R_type= (op==7'b0110011); 
-        I_type= (op==7'b0010011);
+    assign R_type= (op==7'b0110011);
+    assign add= R_type && (func3==3'b000) && (func7==7'b0 );
+    assign sub= R_type && (func3==3'b000)&&(func7==7'b0100000);
+    assign andu=R_type && (func3==3'b111)&&(func7==7'b0 );
+    assign oru= R_type && (func3==3'b110)&&(func7==7'b0 );
+    assign xoru=R_type && (func3==3'b100)&&(func7==7'b0 );
+   
+    assign I_type= (op==7'b0010011);
+    assign xori= I_type && (func3 ==3'b100);
+    assign ori=  I_type && (func3 ==3'b110);
+    assign andi= I_type && (func3 ==3'b111);
+    assign addi= I_type && (func3 ==3'b000);
 
-        if(R_type)begin
-            add=(func3==3'b000) && (func7==7'b0 );
-            sub=(func3==3'b000)&&(func7==7'b0100000);
-            xoru=(func3==3'b100)&&(func7==7'b0 );
-            oru= (func3==3'b110)&&(func7==7'b0 );
-            andu=(func3==3'b111)&&(func7==7'b0 );
-        end
-
-        if(I_type)begin
-            addi=(func3 ==3'b000);
-            xori= (func3 ==3'b100);
-            ori= (func3 ==3'b110);
-            andi= (func3 ==3'b111);
-        end
-        jalr= (op==7'b1100111)&& (func3 ==3'b0);
-        jal = (op==7'b1101111);
-        lui= (op==7'b0110111 );
-        auipc=(op==7'b0010111 );
-    end
+        
+    assign jalr= (op==7'b1100111)&& (func3 ==3'b0);
+    assign jal = (op==7'b1101111);
+    assign lui= (op==7'b0110111 );
+    assign auipc=(op==7'b0010111 );
+    
 
     //signal
 
@@ -119,7 +117,7 @@ module controlUnit(
     assign RFwe = (add|sub|andu|oru|xoru|addi|andi|ori|xori|jalr|jal|lui|auipc) ;
 
     always_ff @( posedge clk ) begin : signal_blk
-            ALUop_out<=ALUop && (nxt_state==s3);
+            ALUop_out<=ALUop;
             sext_num_out<=sext_num;
             ALUAsel_out<=ALUAsel;
             ALUBsel_out<=ALUBsel;
@@ -147,15 +145,16 @@ module controlUnit(
     always_comb begin : ALUBsel_blk
        if(addi|andi|ori|xori|lui|auipc) ALUBsel=1;//imm
        //else if(slli|srli|srai|slliw|srliw|sraiw) ALUBsel=2;//shamt
-       if(jal|jalr)ALUAsel=3;//4
+       else if(jal|jalr)ALUBsel=3;//4
        else ALUBsel=0;       //rs2
     end
 
     always_comb begin :SEXTsel_blk
         if(auipc|lui)                                               SEXTsel=1;//32
-        else if(beq|bne|bge|blt|bltu|bgeu)                          SEXTsel=2;//13
+        //else if(beq|bne|bge|blt|bltu|bgeu)                          SEXTsel=2;//13
         else if(jal)                                                SEXTsel=3;//21
-        else if(addi|andi|ori|xori|jalr|sd|ld|slti|sltiu|addiw)     SEXTsel=4;//12
+       // else if(addi|andi|ori|xori|jalr|sd|ld|slti|sltiu|addiw)     SEXTsel=4;12
+        else if(addi|andi|ori|xori|jalr)     SEXTsel=4;//12
         else  SEXTsel=0;
     end
 

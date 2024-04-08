@@ -49,15 +49,13 @@ module exu(
 
 
     always@(posedge clk,posedge rst)begin
-        if(exu_valid)begin
             if(data_ok)begin
                 alu_out<=alu_res;
                 br_out<=br_res;
                 redirect_valid_out<=redirect_valid;
                 exu_finish<=1;
             end
-            exu_finish<=0;
-        end
+            else exu_finish<=0;
     end
 
     
