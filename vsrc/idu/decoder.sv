@@ -76,13 +76,21 @@ module decoder(
     assign sra=(op==7'b0110011)&&(func3==3'b101)&&(func7==7'b0100000);
     assign srai=(op==7'b0010011)&&(func3==3'b101)&&(func6==6'b010000);
 
-    //U type
-    logic lui,auipc,ld,sd;
+
+    logic lui,auipc,ld,lb,lh,lw,lbu,lhu,lwu,sd,sb,sh,sw;
     assign lui= (op==7'b0110111 );
     assign auipc=(op==7'b0010111 );
     assign ld=(op==7'b0000011)&&(func3==3'b011);
+    assign lb=(op==7'b0000011)&&(func3==3'b000);
+    assign lh=(op==7'b0000011)&&(func3==3'b001);
+    assign lw=(op==7'b0000011)&&(func3==3'b010);
+    assign lbu=(op==7'b0000011)&&(func3==3'b100);
+    assign lhu=(op==7'b0000011)&&(func3==3'b101);
+    assign lwu=(op==7'b0000011)&&(func3==3'b110);
     assign sd=(op==7'b0100011)&&(func3==3'b011);
-    
+    assign sb=(op==7'b0100011)&&(func3==3'b000);
+    assign sh=(op==7'b0100011)&&(func3==3'b001);
+    assign sw=(op==7'b0100011)&&(func3==3'b010);
     //word
     logic addiw,addw,slliw,sllw,srliw, srlw,sraiw, sraw, subw;
     assign addiw=(op==7'b0011011)&&(func3==3'b0);
@@ -96,12 +104,14 @@ module decoder(
     assign subw=(op==7'b0111011)&&(func3==3'b0)&&(func7==7'b0100000);
 
     //mutiple divide
-    logic mul,div,divu,rem,remu;
+    logic mul,div,divu,rem,remu,mulw,divw,divuw,remw,remuw;
     assign mul=(op==7'b0110011)&&(func3==3'b0)&&(func7==7'b0000001);
     assign div=(op==7'b0110011)&&(func3==3'b100)&&(func7==7'b0000001);
     assign divu=(op==7'b0110011)&&(func3==3'b101)&&(func7==7'b0000001);
     assign rem=(op==7'b0110011)&&(func3==3'b110)&&(func7==7'b0000001);
     assign remu=(op==7'b0110011)&&(func3==3'b111)&&(func7==7'b0000001);
+
+    
 
     //Control 
     assign RF_W=add|sub|andu|oru|xoru|addi|andi|ori|xori|jalr|jal|lui|auipc|slt|sltu|slti|sltiu|sll|slli|srl|srli|sra|srai|addiw|addw|slliw|sllw|srliw|srlw|sraiw|sraw|subw|div|divu|rem|remu|mul;
