@@ -29,10 +29,11 @@ module controlUnit(
     output logic [`WBSEL_WIDTH-1:0]WBsel_out,
     output logic RFwe_out,
     output logic DMre_out,
-    output logic DMwe_out
-    
+    output logic DMwe_out,
+    output logic DMwe_valid
     );
-
+    //temp to do
+    assign DMwe_valid=DMwe;
     //state
      typedef enum { 
         s0,
@@ -190,7 +191,7 @@ module controlUnit(
     end
 
     always_comb begin : ALUBsel_blk
-       if(addi|andi|ori|xori|lui|auipc|slti|sltiu) ALUBsel=1;//imm
+       if(addi|andi|ori|xori|lui|auipc|sd|ld|slti|sltiu) ALUBsel=1;//imm
        else if(slli|srli|srai) ALUBsel=2;//shamt
        else if(jal|jalr)ALUBsel=3;//4
        else ALUBsel=0;       //rs2

@@ -8,6 +8,8 @@
 
 
 module alu(
+  input clk,
+  input exu_valid,
   input  [63:0] A,
   input  [63:0] B,
   input  [`ALUOP_WIDTH-1:0] ALUop,
@@ -35,8 +37,13 @@ module alu(
       20:data = B;
       default: data = 0;
     endcase    
-    alu_data_ok=1;
+   // alu_data_ok=1;
   end
+  always_ff @( posedge clk ) begin
+        if(exu_valid)alu_data_ok<=1;
+        else alu_data_ok<=0;
+        
+    end
 
 endmodule
 

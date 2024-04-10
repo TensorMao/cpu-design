@@ -48,7 +48,7 @@ module cpu import common::*; (
     logic DMre,DMwe;
 
     ifu cpu_ifu(clk,rst,ifu_valid,ireq,iresp,redirect_valid,br_out,pc_out,pc_delay,instr,ifu_finish);
-    controlUnit cpu_control(clk,rst,instr,ifu_finish,exu_finish,memu_finish,ifu_valid,idu_valid,exu_valid,memu_valid,wb_valid,rs1addr,rs2addr,rdaddr,sext_num,ALUop,ALUAsel,ALUBsel,BRsel,WBsel,RFwe,DMre,DMwe);
+    controlUnit cpu_control(clk,rst,instr,ifu_finish,exu_finish,memu_finish,ifu_valid,idu_valid,exu_valid,memu_valid,wb_valid,rs1addr,rs2addr,rdaddr,sext_num,ALUop,ALUAsel,ALUBsel,BRsel,WBsel,RFwe,DMre,DMwe,DMwe_valid);
 
     exu cpu_exu(clk,rst,exu_valid,A,B,pc_delay,sext_num,ALUop,BRsel,alu_out,br_out,redirect_valid,exu_finish);
 
@@ -60,11 +60,10 @@ module cpu import common::*; (
     alubmux cpu_alubmux(ALUBsel,rs2,sext_num,B);
     rdmux cpu_rdmux(WBsel,alu_out,dmem_out,0,0,0,rd);
 
-    logic valid_tem1;
-
+    logic valid_tem1,DMwe_valid;
     always_ff@(posedge clk)begin
         valid<=valid_tem1;
-        valid_tem1<=wb_valid||(DMre&&memu_finish);
+        valid_tem1<=wb_valid||(DMwe_valid&&idu_valid);
     end
 
   /*  logic [31:0] instr;

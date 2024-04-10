@@ -32,7 +32,10 @@ module exu(
     logic alu_data_ok,br_data_ok,redirect_valid;
     logic [63:0]alu_res,br_res;
     logic data_ok;
-    assign data_ok=1;
+    always_comb begin : data_ok_blk
+      if(BRsel!=0)data_ok=alu_data_ok;
+      else data_ok=br_data_ok;
+    end;
 
    /* logic div,mul;
     assign div=(ALUop==16||ALUop==17||ALUop==18||ALUop==19);
@@ -41,8 +44,8 @@ module exu(
     assign exu_data_ok=data_ok||div_data_ok||mul_data_ok;*/
 
     
-    alu exu_alu(A,B,ALUop,alu_res,alu_data_ok);  
-    br exu_br(BRsel,A,pc,sext_num,br_res,redirect_valid,br_data_ok);
+    alu exu_alu(clk,exu_valid,A,B,ALUop,alu_res,alu_data_ok);  
+    br exu_br(clk,exu_valid,BRsel,A,pc,sext_num,br_res,redirect_valid,br_data_ok);
     /*divide exu_divide(clk,rst,(ALUop==16||ALUop==18),div,A,B,div_data_ok,div_data, rem_data);
     multiply exu_multiply(clk,rst,mul,A,B,mul_data_ok,mul_data);*/
 
