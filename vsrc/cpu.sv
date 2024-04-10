@@ -30,14 +30,14 @@ module cpu import common::*; (
     output logic [31:0] instr,
     output logic RFwe,
     output logic [4:0]rdaddr,
-    output logic [63:0] rdmux_out,
+    output logic [63:0] rd,
     output logic [63:0]regarray_out [31:0],
     output logic valid,
     output logic skip
 );  
-    logic ifu_finish,exu_finish;
-    logic ifu_valid,idu_valid,exu_valid,wb_valid,redirect_valid;
-    logic [63:0] br_out,pc_out,alu_out;
+    logic ifu_finish,exu_finish,memu_finish;
+    logic ifu_valid,idu_valid,exu_valid,memu_valid,wb_valid,redirect_valid;
+    logic [63:0] br_out,pc_out,alu_out,dmem_out,rs1,rs2,A,B;
     logic [4:0]rs1addr,rs2addr;
     logic [63:0] sext_num;
     logic [`ALUOP_WIDTH-1:0]ALUop;
@@ -45,27 +45,26 @@ module cpu import common::*; (
     logic [`ALUBSEL_WIDTH-1:0] ALUBsel;
     logic [`BRSEL_WIDTH-1:0]BRsel;
     logic [`WBSEL_WIDTH-1:0]WBsel;
-    logic [63:0]rd,rs1,rs2;
-    logic [63:0] A,B;
-
-
+    logic DMre,DMwe;
 
     ifu cpu_ifu(clk,rst,ifu_valid,ireq,iresp,redirect_valid,br_out,pc_out,pc_delay,instr,ifu_finish);
-    controlUnit cpu_control(clk,rst,instr,ifu_finish,exu_finish,ifu_valid,idu_valid,exu_valid,wb_valid,rs1addr,rs2addr,rdaddr,sext_num,ALUop,ALUAsel,ALUBsel,BRsel,WBsel,RFwe);
+    controlUnit cpu_control(clk,rst,instr,ifu_finish,exu_finish,memu_finish,ifu_valid,idu_valid,exu_valid,memu_valid,wb_valid,rs1addr,rs2addr,rdaddr,sext_num,ALUop,ALUAsel,ALUBsel,BRsel,WBsel,RFwe,DMre,DMwe);
 
     exu cpu_exu(clk,rst,exu_valid,A,B,pc_delay,sext_num,ALUop,BRsel,alu_out,br_out,redirect_valid,exu_finish);
+
+    mem cpu_mem (clk,rst,DMre,DMwe,alu_out,rs2,dreq,dresp,dmem_out,memu_finish);
 
     regfile cpu_regfile(clk,rst,idu_valid,wb_valid,RFwe,rs1addr,rs2addr,rdaddr,rd,rs1,rs2,regarray_out);
 
     aluamux cpu_aluamux(ALUAsel,rs1,pc_delay,A);
     alubmux cpu_alubmux(ALUBsel,rs2,sext_num,B);
-    rdmux cpu_rdmux(WBsel,alu_out,0,0,0,0,rd);
+    rdmux cpu_rdmux(WBsel,alu_out,dmem_out,0,0,0,rd);
 
     logic valid_tem1;
 
     always_ff@(posedge clk)begin
         valid<=valid_tem1;
-        valid_tem1<=wb_valid;
+        valid_tem1<=wb_valid||(DMre&&memu_finish);
     end
 
   /*  logic [31:0] instr;
