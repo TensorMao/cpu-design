@@ -154,8 +154,8 @@ module controlUnit(
     assign rs2addr=instr[24:20];
 
     assign RFwe = (add|sub|andu|oru|xoru|addi|andi|ori|xori|jalr|jal|lui|auipc|ld|slt|sltu|slti|sltiu|sll|slli|srl|srli|sra|srai) ;
-    assign DMwe = sd;
-    assign DMre = ld;
+    assign DMwe_out = sd && (nxt_state == s4) && (state == s3);
+    assign DMre_out = ld && (nxt_state == s4) && (state == s3);
 
     always_ff @( posedge clk ) begin : signal_blk
             ALUop_out       <=  ALUop;
@@ -166,8 +166,6 @@ module controlUnit(
             WBsel_out       <=  WBsel;
             RFwe_out        <=  RFwe && (nxt_state == s5);
             rdaddr          <=  instr[11:7];   
-            DMre_out        <=  DMre && (nxt_state == s4) && (state == s3);
-            DMwe_out        <=  DMwe && (nxt_state == s4) && (state == s3);    
     end
 
     always_comb begin :ALUop_blk
