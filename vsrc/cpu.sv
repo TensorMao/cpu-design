@@ -101,8 +101,6 @@ module cpu import common::*; (
     alubmux cpu_alubmux(ALUB_M,rs2_out, sext_num,{58'b0,shamt},pc_out,alubmux_out);
     aluamux cpu_aluamux(ALUA_M,rs1_out,pc_out,aluamux_out);*/
 
-
-
 endmodule
 
 `endif
