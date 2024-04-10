@@ -17,6 +17,7 @@ module mem import common::*;(
     output logic [63:0]dmem_out,
     output logic memu_finish
     );
+    assign dmem_out=dresp.data;
 
     always_ff @(posedge clk)begin
         if(DMre)begin
@@ -27,25 +28,20 @@ module mem import common::*;(
         end
         else if(DMwe)begin
             dreq.valid<=1;
-            dreq.data<=0;
             dreq.addr<=addr;
             dreq.size<=3'b011;
             dreq.strobe<=8'b11111111;
             dreq.data<= (data<< ((addr[1:0]) << 3));
-        end  
-
-       
-    end
-
-    always_ff @( posedge clk ) begin 
+        end     
          if(dresp.data_ok)begin
             dreq.valid<=0;
-            dmem_out<=dresp.data;
             memu_finish<=1;
         end
         else memu_finish<=0;
-        
+
     end
+
+
 
 
 endmodule
