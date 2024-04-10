@@ -63,7 +63,7 @@ module cpu import common::*; (
     logic valid_tem1,DMwe_valid;
     always_ff@(posedge clk)begin
         valid<=valid_tem1;
-        valid_tem1<=wb_valid||(DMwe_valid&&idu_valid);
+        valid_tem1<=wb_valid||(DMwe&&exu_finish);
     end
 
   /*  logic [31:0] instr;

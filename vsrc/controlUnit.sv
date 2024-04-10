@@ -156,7 +156,7 @@ module controlUnit(
     assign RFwe = (add|sub|andu|oru|xoru|addi|andi|ori|xori|jalr|jal|lui|auipc|ld|slt|sltu|slti|sltiu|sll|slli|srl|srli|sra|srai) ;
     assign DMwe_out = sd && (nxt_state == s4) && (state == s3);
     assign DMre_out = ld && (nxt_state == s4) && (state == s3);
-    assign DMwe_valid = sd;
+    
 
     always_ff @( posedge clk ) begin : signal_blk
             ALUop_out       <=  ALUop;
