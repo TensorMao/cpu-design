@@ -41,8 +41,6 @@ module mem import common::*;(
     end
 
 
-
-
 endmodule
 
 `endif
