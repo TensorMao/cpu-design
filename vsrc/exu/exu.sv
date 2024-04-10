@@ -42,10 +42,14 @@ module exu(
     assign mul=(ALUop==15);
 
     assign exu_data_ok=data_ok||div_data_ok||mul_data_ok;*/
-
+    logic trigger,exu_valid_reg;
+    assign trigger=(!exu_valid_reg)&&exu_valid;
+    always_ff @( posedge clk ) begin 
+      exu_valid_reg<=exu_valid;
+    end
     
-    alu exu_alu(clk,exu_valid,A,B,ALUop,alu_res,alu_data_ok);  
-    br exu_br(clk,exu_valid,BRsel,A,pc,sext_num,br_res,redirect_valid,br_data_ok);
+    alu exu_alu(clk,trigger,A,B,ALUop,alu_res,alu_data_ok);  
+    br exu_br(clk,trigger,BRsel,A,pc,sext_num,br_res,redirect_valid,br_data_ok);
     /*divide exu_divide(clk,rst,(ALUop==16||ALUop==18),div,A,B,div_data_ok,div_data, rem_data);
     multiply exu_multiply(clk,rst,mul,A,B,mul_data_ok,mul_data);*/
 

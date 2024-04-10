@@ -7,7 +7,7 @@
 `endif
 module br(
     input clk,
-    input exu_valid,
+    input trigger,
     input [`BRSEL_WIDTH-1:0] BRsel,
     input [63:0]A,
     input [63:0] pc,
@@ -33,7 +33,7 @@ module br(
     end
 
     always_ff @( posedge clk ) begin
-        if(exu_valid)br_data_ok<=1;
+        if(trigger)br_data_ok<=1;
         else br_data_ok<=0;
         
     end
