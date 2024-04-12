@@ -47,23 +47,23 @@ module cpu import common::*; (
     logic [`WBSEL_WIDTH-1:0]WBsel;
     logic DMre,DMwe;
 
-    ifu cpu_ifu(clk,rst,ifu_valid,ireq,iresp,redirect_valid,br_out,pc_out,pc_delay,instr,ifu_finish);
-    controlUnit cpu_control(clk,rst,instr,ifu_finish,exu_finish,memu_finish,ifu_valid,idu_valid,exu_valid,memu_valid,wb_valid,rs1addr,rs2addr,rdaddr,sext_num,ALUop,ALUAsel,ALUBsel,BRsel,WBsel,RFwe,DMre,DMwe,DMwe_valid);
+    ifu cpu_ifu(clk,rst,ifu_valid,ireq,iresp,exu_finish,redirect_valid,br_out,pc_out,pc_delay,instr,ifu_finish);
+    controlUnit cpu_control(clk,rst,instr,ifu_finish,exu_finish,memu_finish,ifu_valid,idu_valid,exu_valid,memu_valid,wb_valid,rs1addr,rs2addr,rdaddr,sext_num,ALUop,ALUAsel,ALUBsel,BRsel,WBsel,RFwe,DMre,DMwe);
 
-    exu cpu_exu(clk,rst,exu_valid,A,B,pc_delay,sext_num,ALUop,BRsel,alu_out,br_out,redirect_valid,exu_finish);
+    exu cpu_exu(clk,rst,exu_valid,A,B,rs1,rs2,pc_out,sext_num,ALUop,BRsel,alu_out,br_out,redirect_valid,exu_finish);
 
     mem cpu_mem (clk,rst,DMre,DMwe,alu_out,rs2,dreq,dresp,dmem_out,memu_finish);
 
     regfile cpu_regfile(clk,rst,idu_valid,wb_valid,RFwe,rs1addr,rs2addr,rdaddr,rd,rs1,rs2,regarray_out);
 
-    aluamux cpu_aluamux(ALUAsel,rs1,pc_delay,A);
+    aluamux cpu_aluamux(ALUAsel,rs1,pc_out,A);
     alubmux cpu_alubmux(ALUBsel,rs2,sext_num,B);
     rdmux cpu_rdmux(WBsel,alu_out,dmem_out,0,0,0,rd);
 
-    logic valid_tem1,DMwe_valid;
+    logic valid_tem1;
     always_ff@(posedge clk)begin
         valid<=valid_tem1;
-        valid_tem1<=wb_valid||(DMwe&&exu_finish);
+        valid_tem1<=wb_valid;
     end
 
   /*  logic [31:0] instr;

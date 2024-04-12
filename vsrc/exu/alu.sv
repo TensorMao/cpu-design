@@ -9,7 +9,7 @@
 
 module alu(
   input clk,
-  input trigger,
+  input exu_valid,
   input  [63:0] A,
   input  [63:0] B,
   input  [`ALUOP_WIDTH-1:0] ALUop,
@@ -34,13 +34,13 @@ module alu(
       12:data = {{32{{A<<B[4:0]}[31]}},{A<<B[4:0]}[31:0]};
       13:data = {{32{{A[31:0]>>B[4:0]}[31]}},{A[31:0]>>B[4:0]}[31:0]};
       14:data = {{32{{$signed(A[31:0])>>>B[4:0]}[31]}},{$signed(A[31:0])>>>B[4:0]}[31:0]};
-      20:data = B;
+      31:data = B;
       default: data = 0;
     endcase    
    // alu_data_ok=1;
   end
   always_ff @(posedge clk) begin
-        if(trigger)alu_data_ok<=1;
+        if(exu_valid)alu_data_ok<=1;
         else alu_data_ok<=0;
         
     end

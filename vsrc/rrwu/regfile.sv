@@ -35,19 +35,8 @@ module regfile(
    
  
    always_ff @ (posedge clk)begin: write
-    //isequal_rdrs1=0;
-    //isequal_rdrs2=0;
       if (RFwe) begin
          if(rdaddr != 0) begin
-            
-            /*if(rdaddr==rs1addr)begin
-              temprs1= regarray[rdaddr];
-              isequal_rdrs1=1;
-            end
-            if(rdaddr==rs2addr)begin
-              temprs2= regarray[rdaddr];
-              isequal_rdrs2=1;
-            end*/
             regarray[rdaddr] = rd;
             
        end
@@ -60,11 +49,6 @@ module regfile(
          rs2<=regarray[rs2addr];
       end
    end
-
- //read
-
-// assign  rs1=isequal_rdrs1?temprs1:regarray[rs1addr];
-// assign  rs2=isequal_rdrs2?temprs2:regarray[rs2addr];
 
 endmodule
 

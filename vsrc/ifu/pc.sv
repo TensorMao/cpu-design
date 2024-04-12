@@ -8,7 +8,7 @@
 module pc(
     input clk,
     input rst,
-    input stall,
+    input PCin,
     input [63:0] pc_in,
     output logic [63:0] pc_out,
     output logic [63:0] pc_delay
@@ -19,10 +19,7 @@ module pc(
         if (rst) begin
            pc_out <= 64'h80000000;
         end
-        else if(stall) begin
-			pc_out <=  pc_out;
-		end 
-        else begin
+        else if(PCin)begin
             pc_delay <= pc_out;
 			pc_out  <= pc_in;
 		end

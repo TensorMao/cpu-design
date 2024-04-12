@@ -21,19 +21,16 @@ module controlUnit(
     output logic [4:0]rs1addr,
     output logic [4:0]rs2addr,
     output logic [4:0]rdaddr,
-    output logic [63:0] sext_num_out,
-    output logic [`ALUOP_WIDTH-1:0]ALUop_out,
-    output logic [`ALUASEL_WIDTH-1:0] ALUAsel_out,
-    output logic [`ALUBSEL_WIDTH-1:0] ALUBsel_out,
-    output logic [`BRSEL_WIDTH-1:0]BRsel_out,
-    output logic [`WBSEL_WIDTH-1:0]WBsel_out,
-    output logic RFwe_out,
-    output logic DMre_out,
-    output logic DMwe_out,
-    output logic DMwe_valid
+    output logic [63:0] sext_num,
+    output logic [`ALUOP_WIDTH-1:0]ALUop,
+    output logic [`ALUASEL_WIDTH-1:0] ALUAsel,
+    output logic [`ALUBSEL_WIDTH-1:0] ALUBsel,
+    output logic [`BRSEL_WIDTH-1:0]BRsel,
+    output logic [`WBSEL_WIDTH-1:0]WBsel,
+    output logic RFwe,
+    output logic DMre,
+    output logic DMwe
     );
-    //temp to do
-    assign DMwe_valid=DMwe;
     //state
      typedef enum { 
         s0,
@@ -45,11 +42,11 @@ module controlUnit(
     } state_t;
     state_t state,nxt_state;
 
-    assign ifu_valid= (state==s1);
-    assign idu_valid= (state==s2);
-    assign exu_valid= (state==s3);
-    assign memu_valid=(state==s4);
-    assign wb_valid=  (state==s5);
+    assign ifu_valid= (state!=s1 && nxt_state==s1);
+    assign idu_valid= (state!=s2 && nxt_state==s2);
+    assign exu_valid= (state!=s3 && nxt_state==s3);
+    assign memu_valid=(state!=s4 && nxt_state==s4);
+    assign wb_valid=  (state!=s5 && nxt_state==s5);
     always_ff @( posedge clk ) begin
         if(rst) state<=s1;
         else state <= nxt_state;  
@@ -74,8 +71,7 @@ module controlUnit(
         end
         s4:begin
             if(memu_finish)begin
-                if(sd)nxt_state=s1;
-                else nxt_state=s5;
+                nxt_state=s5;
             end
             else nxt_state=s4;
         end
@@ -92,10 +88,12 @@ module controlUnit(
     assign func7=instr[31:25]; 
     assign func6=instr[31:26];
 
-    logic R_type,I_type,B_type;
-    assign R_type= (op==7'b0110011);
-    assign I_type= (op==7'b0010011);
-    assign B_type= (op==7'b1100011);
+    logic R_type,I_type,B_type,R_type64,I_type64;
+    assign R_type=  (op==7'b0110011);
+    assign I_type=  (op==7'b0010011);
+    assign B_type=  (op==7'b1100011);
+    assign R_type64=(op==7'b0111011);
+    assign I_type64=(op==7'b0011011);
 
     logic add,sub,andu,oru,xoru,xori,ori,andi,addi,jal,jalr,lui,auipc;
     assign add= R_type && (func3==3'b000) && (func7==7'b0 );
@@ -140,34 +138,43 @@ module controlUnit(
     assign srli=    I_type && (func3==3'b101) && (func6==6'b0);
     assign srai=    I_type && (func3==3'b101) && (func6==6'b010000);
 
-    //signal
+    logic addiw,addw,slliw,sllw,srliw,srlw,sraiw,sraw,subw;
+    assign addw=    R_type64 && (func3==3'b000) && (func7==7'b0);
+    assign sllw=    R_type64 && (func3==3'b001) && (func7==7'b0);
+    assign srlw=    R_type64 && (func3==3'b101) && (func7==7'b0);
+    assign sraw=    R_type64 && (func3==3'b101) && (func7==7'b0100000);
+    assign subw=    R_type64 && (func3==3'b000) && (func7==7'b0100000);
 
-    logic [`ALUOP_WIDTH-1:0] ALUop;
-    logic [`SEXTSEL_WIDTH-1:0] SEXTsel;
-    logic [63:0]sext_num;
-    logic [`ALUASEL_WIDTH-1:0] ALUAsel;
-    logic [`ALUBSEL_WIDTH-1:0] ALUBsel;
-    logic [`BRSEL_WIDTH-1:0]BRsel;
-    logic [`WBSEL_WIDTH-1:0]WBsel;
-    logic RFwe,DMwe,DMre;
-    assign rs1addr=instr[19:15];
-    assign rs2addr=instr[24:20];
+    assign addiw=   I_type64 && (func3==3'b0);
+    assign slliw=   I_type64 && (func3==3'b001) && (func6==6'b0);
+    assign srliw=   I_type64 && (func3==3'b101) && (func6==6'b0);
+    assign sraiw=   I_type64 && (func3==3'b101) && (func6==6'b010000);
 
-    assign RFwe = (add|sub|andu|oru|xoru|addi|andi|ori|xori|jalr|jal|lui|auipc|ld|slt|sltu|slti|sltiu|sll|slli|srl|srli|sra|srai) ;
-    assign DMwe_out = sd && (nxt_state == s4) && (state == s3);
-    assign DMre_out = ld && (nxt_state == s4) && (state == s3);
+    logic mul,div,divu,rem,remu,mulw,divw,divuw,remw,remuw;
+    assign mul=     R_type && (func3==3'b000) && (func7==7'b0000001);
+    assign div=     R_type && (func3==3'b100) && (func7==7'b0000001);
+    assign divu=    R_type && (func3==3'b101) && (func7==7'b0000001);
+    assign rem=     R_type && (func3==3'b110) && (func7==7'b0000001);
+    assign remu=    R_type && (func3==3'b111) && (func7==7'b0000001);
+
+    assign mulw=    R_type64 && (func3==3'b000) && (func7==7'b0000001);
+    assign divw=    R_type64 && (func3==3'b100) && (func7==7'b0000001);
+    assign divuw=   R_type64 && (func3==3'b101) && (func7==7'b0000001);
+    assign remw=    R_type64 && (func3==3'b110) && (func7==7'b0000001);
+    assign remuw=   R_type64 && (func3==3'b111) && (func7==7'b0000001);
     
 
-    always_ff @( posedge clk ) begin : signal_blk
-            ALUop_out       <=  ALUop;
-            sext_num_out    <=  sext_num;
-            ALUAsel_out     <=  ALUAsel;
-            ALUBsel_out     <=  ALUBsel;
-            BRsel_out       <=  BRsel;
-            WBsel_out       <=  WBsel;
-            RFwe_out        <=  RFwe && (nxt_state == s5);
-            rdaddr          <=  instr[11:7];   
-    end
+    //signal
+
+    logic [`SEXTSEL_WIDTH-1:0] SEXTsel;
+    assign rs1addr=instr[19:15];
+    assign rs2addr=instr[24:20];
+    assign rdaddr=instr[11:7];
+
+    assign RFwe = !(sd|beq|bne|blt|bge|bltu|bgeu) && wb_valid;
+    assign DMwe = sd && memu_valid;
+    assign DMre = ld && memu_valid;
+
 
     always_comb begin :ALUop_blk
         if(add|addi|auipc|jal|jalr|sd|ld)  ALUop=0;//A+B
@@ -175,22 +182,39 @@ module controlUnit(
         else if(andu|andi)           ALUop=2;//A&B
         else if(oru|ori)             ALUop=3;//A|B
         else if(xoru|xori)           ALUop=4;//A^B
-        else if(lui)                 ALUop=20;//B
+        else if(lui)                 ALUop=31;//B
         else if(slt|slti)            ALUop=5;//signed <
         else if(sltu|sltiu)          ALUop=6;//unsigned <
         else if(sll|slli)            ALUop=7;// <<
         else if(srl|srli)            ALUop=8;// >>
         else if(sra|srai)            ALUop=9;//>>>
+        else if(addiw|addw)          ALUop=10;
+        else if(subw)                ALUop=11;
+        else if(slliw|sllw)          ALUop=12;
+        else if(srliw|srlw)          ALUop=13;
+        else if(sraiw|sraw)          ALUop=14;
+        else if(mul)                 ALUop=15;
+        else if(mulw)                ALUop=16;
+        else if(divw)                ALUop=17;
+        else if(remw)                ALUop=18;
+        else if(divuw)               ALUop=19;
+        else if(remuw)               ALUop=20;
+        else if(divu)                ALUop=21;
+        else if(remu)                ALUop=22;
+        else if(div)                 ALUop=23;
+        else if(rem)                 ALUop=24;
+        
+        
         else                         ALUop=0; 
     end
 
     always_comb begin : ALUAsel_blk
-        if(auipc) ALUAsel=1;//pc
+        if(auipc|jal|jalr) ALUAsel=1;//pc
         else ALUAsel=0;//rs1
     end
 
     always_comb begin : ALUBsel_blk
-       if(addi|andi|ori|xori|lui|auipc|sd|ld|slti|sltiu) ALUBsel=1;//imm
+       if(addi|andi|ori|xori|lui|auipc|sd|ld|slti|sltiu|addiw) ALUBsel=1;//imm
        else if(slli|srli|srai) ALUBsel=2;//shamt
        else if(jal|jalr)ALUBsel=3;//4
        else ALUBsel=0;       //rs2
@@ -200,8 +224,7 @@ module controlUnit(
         if(auipc|lui)                                               SEXTsel=1;//32
         else if(beq|bne|bge|blt|bltu|bgeu)                          SEXTsel=2;//13
         else if(jal)                                                SEXTsel=3;//21
-       // else if(addi|andi|ori|xori|jalr|sd|ld|slti|sltiu|addiw)     SEXTsel=4;12
-        else if(addi|andi|ori|xori|jalr|ld|slti|sltiu)              SEXTsel=4;//12
+        else if(addi|andi|ori|xori|jalr|ld|slti|sltiu|addiw)        SEXTsel=4;//12
         else if(sd)                                                 SEXTsel=5;//sd
         else  SEXTsel=0;
     end
@@ -211,15 +234,20 @@ module controlUnit(
             1: sext_num={{32{instr[31]}},instr[31:12],12'b0};//32
             2: sext_num={{51{instr[31]}},instr[31],instr[7],instr[30:25],instr[11:8],1'b0};//13
             3: sext_num={{43{instr[31]}},instr[31],instr[19:12],instr[20],instr[30:21],1'b0};//21
-            //4: sext_num=DM_W?{{52{instr[31]}},instr[31:25],instr[11:7]}:{{52{instr[31]}},instr[31:20]};//12
-            4: sext_num={{52{instr[31]}},instr[31:20]};
-            5: sext_num={{52{instr[31]}},instr[31:25],instr[11:7]};
+            4: sext_num={{52{instr[31]}},instr[31:20]};//12
+            5: sext_num={{52{instr[31]}},instr[31:25],instr[11:7]};//sd
         endcase
     end
 
     always_comb begin : BRsel_blk
-        if(jal) BRsel=1;
-        else if(jalr)BRsel=2;
+        if(jal)         BRsel=1;
+        else if(jalr)   BRsel=2;
+        else if(beq)    BRsel=3;
+        else if(bne)    BRsel=4;
+        else if(blt)    BRsel=5;
+        else if(bge)    BRsel=6;
+        else if(bltu)   BRsel=7;
+        else if(bgeu)   BRsel=8;
         else BRsel=0;
     end
 

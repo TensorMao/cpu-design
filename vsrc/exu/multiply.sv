@@ -28,12 +28,6 @@ module multiply(
     logic [64:0]plus;
     assign plus=P_reg+micand[63:0];
     logic [7:0] Cn;
-   /* logic valid_reg;
-
-    assign mult_data_ok = (Cn == 0); 
-    assign mult_data = mult_data_ok?P_reg:0;*/
-
-    
     
     always_ff@(posedge clk,posedge rst)begin
         if(rst)state<=IDLE;

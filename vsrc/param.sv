@@ -7,7 +7,7 @@
  `define SEXTSEL_WIDTH 3 
   `define ALUASEL_WIDTH 1 
    `define ALUBSEL_WIDTH 2 
-   `define BRSEL_WIDTH 2
+   `define BRSEL_WIDTH 4
    `define WBSEL_WIDTH 3
 
 `else
