@@ -29,7 +29,8 @@ module controlUnit(
     output logic [`WBSEL_WIDTH-1:0]WBsel,
     output logic RFwe,
     output logic DMre,
-    output logic DMwe
+    output logic DMwe,
+    output logic [2:0] dreq_info
     );
     //state
      typedef enum { 
@@ -64,7 +65,7 @@ module controlUnit(
         end
         s3:begin 
             if(exu_finish) begin
-                if(ld|sd)nxt_state=s4;
+                if(sd|sb|sh|sw|ld|lb|lh|lw|lbu|lhu|lwu)nxt_state=s4;
                 else nxt_state=s5;
             end
             else nxt_state=s3;
@@ -88,12 +89,14 @@ module controlUnit(
     assign func7=instr[31:25]; 
     assign func6=instr[31:26];
 
-    logic R_type,I_type,B_type,R_type64,I_type64;
-    assign R_type=  (op==7'b0110011);
-    assign I_type=  (op==7'b0010011);
-    assign B_type=  (op==7'b1100011);
-    assign R_type64=(op==7'b0111011);
-    assign I_type64=(op==7'b0011011);
+    logic R_type,I_type,B_type,R_type64,I_type64,I_typeload,S_type;
+    assign R_type=      (op==7'b0110011);
+    assign I_type=      (op==7'b0010011);
+    assign B_type=      (op==7'b1100011);
+    assign R_type64=    (op==7'b0111011);
+    assign I_type64=    (op==7'b0011011);
+    assign I_typeload=  (op==7'b0000011);
+    assign S_type=      (op==7'b0100011);
 
     logic add,sub,andu,oru,xoru,xori,ori,andi,addi,jal,jalr,lui,auipc;
     assign add= R_type && (func3==3'b000) && (func7==7'b0 );
@@ -114,9 +117,18 @@ module controlUnit(
     assign lui=  (op==7'b0110111);
     assign auipc=(op==7'b0010111);
 
-    logic ld,sd;
-    assign ld=  (op==7'b0000011) && (func3==3'b011);
-    assign sd=  (op==7'b0100011) && (func3==3'b011);
+    logic ld,sd,lb,lh,lw,lbu,lhu,lwu,sb,sh,sw;;
+    assign ld=  I_typeload && (func3==3'b011);
+    assign lb=  I_typeload && (func3==3'b000);
+    assign lh=  I_typeload && (func3==3'b001);
+    assign lw=  I_typeload && (func3==3'b010);
+    assign lbu= I_typeload && (func3==3'b100);
+    assign lhu= I_typeload && (func3==3'b101);
+    assign lwu= I_typeload && (func3==3'b110);
+    assign sb=  S_type && (func3==3'b000);
+    assign sh=  S_type && (func3==3'b001);
+    assign sw=  S_type && (func3==3'b010);
+    assign sd=  S_type && (func3==3'b011);
 
     logic beq,bne,blt,bge,bltu,bgeu,slt,sltu,slti,sltiu,sll,slli,srl,srli,sra,srai;
     assign beq =  B_type && (func3==3'b000);
@@ -170,14 +182,15 @@ module controlUnit(
     assign rs1addr=instr[19:15];
     assign rs2addr=instr[24:20];
     assign rdaddr=instr[11:7];
+    //assign shamt=instr[25:20];
 
-    assign RFwe = !(sd|beq|bne|blt|bge|bltu|bgeu) && wb_valid;
-    assign DMwe = sd && memu_valid;
-    assign DMre = ld && memu_valid;
+    assign RFwe = !(sd|sb|sh|sw|beq|bne|blt|bge|bltu|bgeu) && wb_valid;
+    assign DMwe = (sd|sb|sh|sw) && memu_valid;
+    assign DMre = (ld|lb|lh|lw|lbu|lhu|lwu) && memu_valid;
 
 
     always_comb begin :ALUop_blk
-        if(add|addi|auipc|jal|jalr|sd|ld)  ALUop=0;//A+B
+        if(add|addi|auipc|jal|jalr|sd|sb|sh|sw|ld|lb|lh|lw|lbu|lhu|lwu)  ALUop=0;//A+B
         else if(sub)                 ALUop=1;//A-B
         else if(andu|andi)           ALUop=2;//A&B
         else if(oru|ori)             ALUop=3;//A|B
@@ -214,8 +227,7 @@ module controlUnit(
     end
 
     always_comb begin : ALUBsel_blk
-       if(addi|andi|ori|xori|lui|auipc|sd|ld|slti|sltiu|addiw) ALUBsel=1;//imm
-       else if(slli|srli|srai) ALUBsel=2;//shamt
+       if(addi|andi|ori|xori|lui|auipc|sd|sb|sh|sw|ld|lb|lh|lw|lbu|lhu|lwu|slti|sltiu|addiw|slli|srli|srai|slliw|srliw|sraiw) ALUBsel=1;//imm
        else if(jal|jalr)ALUBsel=3;//4
        else ALUBsel=0;       //rs2
     end
@@ -224,8 +236,9 @@ module controlUnit(
         if(auipc|lui)                                               SEXTsel=1;//32
         else if(beq|bne|bge|blt|bltu|bgeu)                          SEXTsel=2;//13
         else if(jal)                                                SEXTsel=3;//21
-        else if(addi|andi|ori|xori|jalr|ld|slti|sltiu|addiw)        SEXTsel=4;//12
-        else if(sd)                                                 SEXTsel=5;//sd
+        else if(addi|andi|ori|xori|jalr|ld|lb|lh|lw|lbu|lhu|lwu|slti|sltiu|addiw)                                                      SEXTsel=4;//12
+        else if(sd|sb|sh|sw)                                        SEXTsel=5;//sd
+        else if(slli|srli|srai|slliw|srliw|sraiw)                   SEXTsel=6;//shamt
         else  SEXTsel=0;
     end
 
@@ -236,6 +249,7 @@ module controlUnit(
             3: sext_num={{43{instr[31]}},instr[31],instr[19:12],instr[20],instr[30:21],1'b0};//21
             4: sext_num={{52{instr[31]}},instr[31:20]};//12
             5: sext_num={{52{instr[31]}},instr[31:25],instr[11:7]};//sd
+            6: sext_num={58'b0,instr[25:20]};//shamt
         endcase
     end
 
@@ -252,8 +266,22 @@ module controlUnit(
     end
 
     always_comb begin : WBsel_blk
-        if (ld) WBsel=4;
+        if (ld|lb|lh|lw|lbu|lhu|lwu) WBsel=4;
+        else if(div|divu|divw|divuw) WBsel=5;
+        else if(remw|remuw|rem|remu) WBsel=6;
+        else if( mul|mulw)WBsel=7;
         else WBsel=0;
+    end
+
+      always_comb begin :dreq_info_blk
+        if(ld|sd)       dreq_info=3'b011;
+        else if(lw|sw)  dreq_info=3'b010;
+        else if(lwu)    dreq_info=3'b110;
+        else if(lh|sh)  dreq_info=3'b001;
+        else if(lhu)    dreq_info=3'b101;
+        else if(lb|sb)  dreq_info=3'b000;
+        else if(lbu)    dreq_info=3'b100;
+        else dreq_info=3'b011;
     end
 
 

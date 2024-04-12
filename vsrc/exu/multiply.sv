@@ -8,6 +8,7 @@
 module multiply(
     input clk,
     input rst,
+    input muldivword,
     input mult_valid,
     input [63:0] x,
     input [63:0] y,
@@ -28,6 +29,13 @@ module multiply(
     logic [64:0]plus;
     assign plus=P_reg+micand[63:0];
     logic [7:0] Cn;
+    logic isword;
+   /* logic valid_reg;
+
+    assign mult_data_ok = (Cn == 0); 
+    assign mult_data = mult_data_ok?P_reg:0;*/
+
+    
     
     always_ff@(posedge clk,posedge rst)begin
         if(rst)state<=IDLE;
@@ -36,17 +44,19 @@ module multiply(
                 IDLE:begin
                     mult_data_ok<=0;
                     mult_data<=0;
+                    isword<=0;
                     if(mult_valid)begin
                         mult_reg<={65'b0,x};
                         micand<=y;
                         Cn<=64;
+                        isword<=muldivword;
                         state<=EXECUTE;
                     end
                 end
                 EXECUTE:begin
                     if(Cn==0)begin
                         mult_data_ok<=1;
-                        mult_data<=mult_reg[63:0];
+                        mult_data<=isword?{{32{mult_reg[31]}},mult_reg[31:0]}:mult_reg[63:0];
                         state<=IDLE;
                     end
                     else begin           
