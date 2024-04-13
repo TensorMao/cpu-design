@@ -8,7 +8,7 @@
 
 `endif
 module rdmux(
-    input [`WBSEL_WIDTH-1:0]WBsel,
+    input [`WBSEL_WIDTH]WBsel,
     input [63:0] alu_out,
     input [63:0] dmem_out,
     input [63:0] div_out,

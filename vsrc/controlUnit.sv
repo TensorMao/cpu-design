@@ -22,11 +22,11 @@ module controlUnit(
     output logic [4:0]rs2addr,
     output logic [4:0]rdaddr,
     output logic [63:0] sext_num,
-    output logic [`ALUOP_WIDTH-1:0]ALUop,
-    output logic [`ALUASEL_WIDTH-1:0] ALUAsel,
-    output logic [`ALUBSEL_WIDTH-1:0] ALUBsel,
-    output logic [`BRSEL_WIDTH-1:0]BRsel,
-    output logic [`WBSEL_WIDTH-1:0]WBsel,
+    output logic [`ALUOP_WIDTH]ALUop,
+    output logic [`ALUASEL_WIDTH] ALUAsel,
+    output logic [`ALUBSEL_WIDTH] ALUBsel,
+    output logic [`BRSEL_WIDTH]BRsel,
+    output logic [`WBSEL_WIDTH]WBsel,
     output logic RFwe,
     output logic DMre,
     output logic DMwe,
@@ -178,7 +178,7 @@ module controlUnit(
 
     //signal
 
-    logic [`SEXTSEL_WIDTH-1:0] SEXTsel;
+    logic [`SEXTSEL_WIDTH] SEXTsel;
     assign rs1addr=instr[19:15];
     assign rs2addr=instr[24:20];
     assign rdaddr=instr[11:7];

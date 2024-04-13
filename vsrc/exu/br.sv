@@ -8,7 +8,7 @@
 module br(
     input clk,
     input exu_valid,
-    input [`BRSEL_WIDTH-1:0] BRsel,
+    input [`BRSEL_WIDTH] BRsel,
     input [63:0]rs1,
     input [63:0]rs2,
     input [63:0] pc,

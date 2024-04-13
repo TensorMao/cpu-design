@@ -1,13 +1,13 @@
 `ifndef __ALUBMUX_SV
 `define __ALUBMUX_SV
 `ifdef VERILATOR
-
+`include "param.sv"
 `else
 
 
 `endif
 module alubmux(
-    input [1:0]ALUBsel,
+    input [`ALUBSEL_WIDTH]ALUBsel,
     input [63:0] rs2_out,
     input [63:0]sext_num,
     output logic[63:0] alubmux_out

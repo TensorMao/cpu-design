@@ -6,10 +6,7 @@
 `include "rrwu/regfile.sv"
 `include "exu/exu.sv"
 `include "ifu/ifu.sv"
-`include "idu/idu.sv"
 `include "memu/mem.sv"
-
-`include "mux/pcmux.sv"
 `include "mux/rdmux.sv"
 `include "mux/alubmux.sv"
 `include "mux/aluamux.sv"
@@ -40,11 +37,11 @@ module cpu import common::*; (
     logic [63:0] br_out,pc_out,alu_out,dmem_out,div_out,rem_out,mul_out,rs1,rs2,A,B,sext_num;
     logic [4:0]rs1addr,rs2addr;
     logic [2:0]dreq_info;
-    logic [`ALUOP_WIDTH-1:0]ALUop;
-    logic [`ALUASEL_WIDTH-1:0] ALUAsel;
-    logic [`ALUBSEL_WIDTH-1:0] ALUBsel;
-    logic [`BRSEL_WIDTH-1:0]BRsel;
-    logic [`WBSEL_WIDTH-1:0]WBsel;
+    logic [`ALUOP_WIDTH]ALUop;
+    logic [`ALUASEL_WIDTH] ALUAsel;
+    logic [`ALUBSEL_WIDTH] ALUBsel;
+    logic [`BRSEL_WIDTH]BRsel;
+    logic [`WBSEL_WIDTH]WBsel;
     logic DMre,DMwe;
 
     ifu cpu_ifu(clk,rst,ifu_valid,ireq,iresp,exu_finish,redirect_valid,br_out,pc_out,pc_delay,instr,ifu_finish);

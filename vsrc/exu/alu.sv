@@ -12,7 +12,7 @@ module alu(
   input exu_valid,
   input  [63:0] A,
   input  [63:0] B,
-  input  [`ALUOP_WIDTH-1:0] ALUop,
+  input  [`ALUOP_WIDTH] ALUop,
   output logic [63:0] data,
   output logic alu_data_ok
   );
