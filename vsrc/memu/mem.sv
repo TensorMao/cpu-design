@@ -20,6 +20,7 @@ module mem import common::*;(
     );
 
     logic [5:0]ad;
+    logic [7:0]strobe;
     logic [63:0]dresp_data;
     assign ad={3'b0,dreq.addr[2:0]}<<3;
     always_comb begin 
@@ -34,8 +35,6 @@ module mem import common::*;(
         default:dresp_data=dresp.data;
         endcase   
     end
-
-    logic [7:0]strobe;
     always_comb begin 
         case(dreq_info)
         0:strobe=8'b00000001<<addr[2:0];
