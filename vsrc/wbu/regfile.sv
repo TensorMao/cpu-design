@@ -20,10 +20,6 @@ module regfile(
    output logic[63:0] rs2,
    output logic [63:0] regarray [31:0] );
    integer i;
-   reg [63:0] temprs1;
-   reg [63:0] temprs2;
-   logic isequal_rdrs1;
-   logic isequal_rdrs2;
  //write
    always_ff @( posedge rst ) begin : init
       i = 0 ;

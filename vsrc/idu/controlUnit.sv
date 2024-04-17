@@ -21,6 +21,7 @@ module controlUnit(
     output logic [4:0]rs1addr,
     output logic [4:0]rs2addr,
     output logic [4:0]rdaddr,
+    output logic [11:0]csraddr,
     output logic [63:0] sext_num,
     output logic [`ALUOP_WIDTH]ALUop,
     output logic [`ALUASEL_WIDTH] ALUAsel,
@@ -89,7 +90,7 @@ module controlUnit(
     assign func7=instr[31:25]; 
     assign func6=instr[31:26];
 
-    logic R_type,I_type,B_type,R_type64,I_type64,I_typeload,S_type;
+    logic R_type,I_type,B_type,R_type64,I_type64,I_typeload,S_type,CSR_type;
     assign R_type=      (op==7'b0110011);
     assign I_type=      (op==7'b0010011);
     assign B_type=      (op==7'b1100011);
@@ -97,6 +98,7 @@ module controlUnit(
     assign I_type64=    (op==7'b0011011);
     assign I_typeload=  (op==7'b0000011);
     assign S_type=      (op==7'b0100011);
+    assign CSR_type=    (op==7'b1110011);
 
     logic add,sub,andu,oru,xoru,xori,ori,andi,addi,jal,jalr,lui,auipc;
     assign add= R_type && (func3==3'b000) && (func7==7'b0 );
@@ -162,6 +164,7 @@ module controlUnit(
     assign srliw=   I_type64 && (func3==3'b101) && (func6==6'b0);
     assign sraiw=   I_type64 && (func3==3'b101) && (func6==6'b010000);
 
+    /*--multiply and divide--*/
     logic mul,div,divu,rem,remu,mulw,divw,divuw,remw,remuw;
     assign mul=     R_type && (func3==3'b000) && (func7==7'b0000001);
     assign div=     R_type && (func3==3'b100) && (func7==7'b0000001);
@@ -174,6 +177,10 @@ module controlUnit(
     assign divuw=   R_type64 && (func3==3'b101) && (func7==7'b0000001);
     assign remw=    R_type64 && (func3==3'b110) && (func7==7'b0000001);
     assign remuw=   R_type64 && (func3==3'b111) && (func7==7'b0000001);
+
+    /*--csr--*/
+    assign csrrw=   CSR_type && (func3==3'b001);
+
     
 
     //signal

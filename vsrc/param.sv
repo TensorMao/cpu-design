@@ -10,6 +10,10 @@
    `define BRSEL_WIDTH 3:0
    `define WBSEL_WIDTH 2:0
 
+   `define  MTVEC_RESET  64'h0
+   `define CSR_MTVEC_ADDR 12'h305
+   `define CSR_MSTATUS_ADDR 12'h305
+
 `else
 `endif
 
