@@ -14,11 +14,26 @@ module core import common::*;(
 	input  dbus_resp_t dresp,
 	input  logic       trint, swint, exint
 );
-	/* TODO: Add your CPU-Core here. */
-	cpu cpu(clk,reset,ireq,iresp,dreq,dresp,pc_delay,instr,RF_W,rdc,rd,regarray,valid,skip);
+
+	cpu cpu(
+		.clk(clk),
+		.rst(reset),
+		.ireq(ireq),
+		.iresp(iresp),
+		.dreq(dreq),
+		.dresp(dresp),
+		.pc_delay(pc_delay),
+		.instr(instr),
+		.RFwe(RFwe),
+		.rdaddr(rdc),
+		.rd(rd),
+		.regarray_o(regarray),
+		.valid(valid),
+		.skip(skip)
+		);
 	
 	logic [31:0] instr;
-    logic RF_W;
+    logic RFwe;
     logic [4:0]rdc;
     logic [63:0] rd;
 	logic [63:0] regarray [31:0];
@@ -30,7 +45,7 @@ module core import common::*;(
 	logic RF_W_tem1,RF_W_tem2;
 	always_ff @(posedge clk ) begin:RF_W_show
 		RF_W_tem2 <= RF_W_tem1;
-		RF_W_tem1 <= RF_W;
+		RF_W_tem1 <= RFwe;
 	end
 
 	logic[4:0] rdc_tem1,rdc_tem2;

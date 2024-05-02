@@ -1,89 +1,41 @@
-`ifndef __CONTROLUNIT_SV
-`define __CONTROLUNIT_SV
+`ifndef __IDU_SV
+`define __IDU_SV
 `ifdef VERILATOR
-`include "param.sv"
 `else
 
-`endif
 
-module controlUnit(
-    input clk,
+`endif
+module idu(
     input rst,
+    input [5:0] stall,
     input [31:0] instr,
-    input ifu_finish,
-    input exu_finish,
-    input memu_finish,
-    output logic ifu_valid,
-    output logic idu_valid,
-    output logic exu_valid,
-    output logic memu_valid,
-    output logic wb_valid,
+    input [63:0] instaddr,
+    input logic branch_slot_end_i,
+    /* ----- regfile read signal ----- */
+    output logic RFre1,
     output logic [4:0]rs1addr,
+    output logic RFre2,
     output logic [4:0]rs2addr,
-    output logic [4:0]rdaddr,
-    output logic [11:0]csraddr,
+    
+    /* ----- signal to exu -----*/
+    output logic [31:0] inst_o,
+    output logic [63:0] inst_addr_o,
+    output logic  branch_slot_end_o,
     output logic [63:0] sext_num,
     output logic [`ALUOP_WIDTH]ALUop,
     output logic [`ALUASEL_WIDTH] ALUAsel,
     output logic [`ALUBSEL_WIDTH] ALUBsel,
     output logic [`BRSEL_WIDTH]BRsel,
+    /* ----- signal to wbu -----*/
     output logic [`WBSEL_WIDTH]WBsel,
+    output logic [4:0]rdaddr,
     output logic RFwe,
+    /* ----- signal to memu -----*/
     output logic DMre,
     output logic DMwe,
     output logic [2:0] dreq_info
-    );
-    //state
-     typedef enum { 
-        s0,
-        s1, //ifetch
-        s2, //decode
-        s3, //execute
-        s4, //memrw
-        s5  //writeback
-    } state_t;
-    state_t state,nxt_state;
 
-    assign ifu_valid= (state!=s1 && nxt_state==s1);
-    assign idu_valid= (state!=s2 && nxt_state==s2);
-    assign exu_valid= (state!=s3 && nxt_state==s3);
-    assign memu_valid=(state!=s4 && nxt_state==s4);
-    assign wb_valid=  (state!=s5 && nxt_state==s5);
-    always_ff @( posedge clk ) begin
-        if(rst) state<=s1;
-        else state <= nxt_state;  
-    end
-
-    always_comb begin : state_change
-        case(state)
-        s0: nxt_state=s1;
-        s1:begin
-            if(ifu_finish) nxt_state=s2;
-            else nxt_state=s1;
-        end
-        s2:begin
-            nxt_state=s3;
-        end
-        s3:begin 
-            if(exu_finish) begin
-                if(sd|sb|sh|sw|ld|lb|lh|lw|lbu|lhu|lwu)nxt_state=s4;
-                else nxt_state=s5;
-            end
-            else nxt_state=s3;
-        end
-        s4:begin
-            if(memu_finish)begin
-                nxt_state=s5;
-            end
-            else nxt_state=s4;
-        end
-        s5:begin
-            nxt_state=s1;
-        end
-        endcase
-    end
-
-    //instr
+);
     logic [6:0] op,func7; logic [5:0]func6; logic [2:0]func3;     
     assign op=instr[6:0]; 
     assign func3=instr[14:12]; 
@@ -179,21 +131,28 @@ module controlUnit(
     assign remuw=   R_type64 && (func3==3'b111) && (func7==7'b0000001);
 
     /*--csr--*/
+    logic csrrw;
     assign csrrw=   CSR_type && (func3==3'b001);
 
     
 
     //signal
-
+    assign inst_o=instr;
+    assign inst_addr_o = instaddr;
+    assign branch_slot_end_o = branch_slot_end_i;
     logic [`SEXTSEL_WIDTH] SEXTsel;
     assign rs1addr=instr[19:15];
     assign rs2addr=instr[24:20];
     assign rdaddr=instr[11:7];
+   
     //assign shamt=instr[25:20];
 
-    assign RFwe = !(sd|sb|sh|sw|beq|bne|blt|bge|bltu|bgeu) && wb_valid;
-    assign DMwe = (sd|sb|sh|sw) && memu_valid;
-    assign DMre = (ld|lb|lh|lw|lbu|lhu|lwu) && memu_valid;
+    assign RFwe = !(sd|sb|sh|sw|beq|bne|blt|bge|bltu|bgeu) && (instr!=0) ;
+    assign RFre1=1;
+    assign RFre2=1;
+    
+    assign DMwe = (sd|sb|sh|sw) ;
+    assign DMre = (ld|lb|lh|lw|lbu|lhu|lwu);
 
 
     always_comb begin :ALUop_blk
@@ -297,21 +256,9 @@ module controlUnit(
 
 
 
-    
 
-    
-
-
-
-
-
-
-
-
-
-
-    
 endmodule
+    
 
 
 `endif

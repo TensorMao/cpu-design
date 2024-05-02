@@ -10,16 +10,24 @@
 module ifu import common::*;(
     input clk,
     input rst,
-    input ifu_valid,
+    /* ----- signals from the ctrl unit -----*/
+    input [5:0] stall,
+    input flush,
+   // input pc_nxt,
+    //input ifu_valid,
+    
+   input  ibus_resp_t iresp,
+   output [31:0] instr,
+   // input PCin,
+    input branch_valid,
+    input [63:0]branch_addr,
+
+    output logic [63:0] pc_o,
+    output logic [63:0] pc_delay_o,
     output ibus_req_t  ireq,
-    input  ibus_resp_t iresp,
-    input PCin,
-    input redirect_valid,
-    input [63:0]pc_target,
-    output logic [63:0] pc_out,
-    output logic [63:0] pc_delay,
-    output logic [31:0] instr,
-    output logic ifu_finish
+    output logic  branch_slot_end_o,
+
+    output logic stall_req
 
     );
    // logic stall;
@@ -30,34 +38,22 @@ module ifu import common::*;(
    // assign stall = ~iresp.data_ok;
    // assign ifu_finish=iresp.data_ok;
 
-    pc ifu_pc(clk,rst,PCin,pc_nxt,pc_out,pc_delay);
-    pcnxt ifu_pcnxt(pc_out,redirect_valid,pc_target,pc_nxt);
+    pc ifu_pc(clk,rst,stall[0],flush,pc_nxt,pc_o,pc_delay_o);
+    pcnxt ifu_pcnxt(pc_o,branch_valid,branch_addr,pc_nxt);
 
-    always_ff @( posedge clk ,posedge rst ) begin 
-            if(ifu_valid)begin
-                ireq.valid<=1;
-                ireq.addr<=pc_out;
-            end
+    assign stall_req=ireq.valid && ~iresp.data_ok;
+    assign instr=iresp.data;
+    assign ireq.valid=1;
+    assign ireq.addr=pc_o;
 
-            if(iresp.data_ok)begin
-                instr<=iresp.data;
-                ireq.valid<=0;
-                ifu_finish<=1;
-            end
-            else ifu_finish<=0;
-
+    always_ff@(posedge clk)begin
+      if(branch_valid && ~stall[0])branch_slot_end_o<=1;
+      else branch_slot_end_o<=0;
     end
 
-
-
-
-
-    
-   
- 
-
-
 endmodule
+
+
 
 
 

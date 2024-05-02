@@ -8,7 +8,40 @@
 module mem import common::*;(
     input clk,
     input rst,
-    input DMre,
+    /* ----- signals from exu ----- */
+    input[63:0] instaddr_i,
+    input[31:0] inst_i,
+
+    input [`WBSEL_WIDTH] WBsel_i,
+    input        RFwe_i,
+    input[5:0]   rdaddr_i,
+    input[63:0]  rd_wdata_i, 
+
+    input DMre_i,
+    input DMwe_i,
+    input [2:0] dreq_info_i,
+    input[63:0]  mem_addr_i,  
+    input[63:0]  mem_wdata_i,
+    /*----- signals to access the external memory -----*/
+    output logic[63:0] mem_addr_o,
+    output logic       DMwe_o,
+    output logic[3:0]  dreq_info_o,         
+    output logic[63:0]mem_wdata_o,
+    output logic         DMre_o,
+    //the read result from memory
+    input[63:0]  mem_data_i,
+    /*-- pass down to mem_wb stage -----*/
+    output logic [`WBSEL_WIDTH] WBsel_o,
+    output logic RFwe_o,
+    output logic[63:0]       rdaddr_o,
+    output logic[63:0]       rd_wdata_o,
+     /*------- signals to control ----------*/
+    output logic        stall_req_o,
+    output logic[63:0]  instaddr_o,
+    output logic[31:0]  inst_o
+
+    
+  /*  input DMre,
     input DMwe,
     input [63:0]addr,
     input [63:0]data,
@@ -16,7 +49,7 @@ module mem import common::*;(
     output dbus_req_t  dreq,
 	input  dbus_resp_t dresp,
     output logic [63:0]dmem_out,
-    output logic memu_finish
+    output logic memu_finish*/
     );
 
     logic [5:0]ad;

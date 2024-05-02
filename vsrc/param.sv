@@ -14,6 +14,12 @@
    `define CSR_MTVEC_ADDR 12'h305
    `define CSR_MSTATUS_ADDR 12'h305
 
+    // machine states
+   `define STATE_RESET         4'b0001;
+   `define STATE_OPERATING     4'b0010;
+   `define STATE_TRAP_TAKEN    4'b0100;
+   `define STATE_TRAP_RETURN   4'b1000;
+
 `else
 `endif
 

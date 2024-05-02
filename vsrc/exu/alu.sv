@@ -8,13 +8,10 @@
 
 
 module alu(
-  input clk,
-  input exu_valid,
   input  [63:0] A,
   input  [63:0] B,
   input  [`ALUOP_WIDTH] ALUop,
-  output logic [63:0] data,
-  output logic alu_data_ok
+  output logic [63:0] data
   );
 
   always_comb begin
@@ -39,11 +36,6 @@ module alu(
     endcase    
    // alu_data_ok=1;
   end
-  always_ff @(posedge clk) begin
-        if(exu_valid)alu_data_ok<=1;
-        else alu_data_ok<=0;
-        
-    end
 
 endmodule
 

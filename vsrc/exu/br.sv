@@ -6,16 +6,13 @@
 
 `endif
 module br(
-    input clk,
-    input exu_valid,
     input [`BRSEL_WIDTH] BRsel,
     input [63:0]rs1,
     input [63:0]rs2,
     input [63:0] pc,
     input [63:0] sext_num,
     output logic [63:0] br_out,
-    output logic redirect_valid,
-    output logic br_data_ok
+    output logic redirect_valid
 );
     always_comb begin
         case(BRsel)
@@ -39,11 +36,6 @@ module br(
         endcase
     end
 
-    always_ff @( posedge clk ) begin
-        if(exu_valid)br_data_ok<=1;
-        else br_data_ok<=0;
-        
-    end
       
 endmodule
 `endif
