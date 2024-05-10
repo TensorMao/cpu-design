@@ -179,7 +179,7 @@ module controlUnit(
     assign remuw=   R_type64 && (func3==3'b111) && (func7==7'b0000001);
 
     /*--csr--*/
-    assign csrrw=   CSR_type && (func3==3'b001);
+    //assign csrrw=   CSR_type && (func3==3'b001);
 
     
 
