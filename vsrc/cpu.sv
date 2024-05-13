@@ -44,13 +44,32 @@ module cpu import common::*; (
     logic valid_tem1;
     logic[31:0] instr_tem1;
     logic[63:0] inst_addr_tem1;
+    logic[63:0] rd_tem1;
+    logic[4:0] rdaddr_tem1;
+    logic RFwe_tem1;
+    logic skip_tem1;
     always_ff@(posedge clk)begin
         valid<=valid_tem1;
         valid_tem1<=submit;
+
+        skip<=skip_tem1;
+        skip_tem1<=memwb_skip_o;
+
         instr<= instr_tem1;
         instr_tem1<=memwb_inst_o;
+
         pc_delay<= inst_addr_tem1;
         inst_addr_tem1<=memwb_inst_addr_o;
+
+        rd<=rd_tem1;
+        rd_tem1<=memwb_rd_wdata_o;
+
+        rdaddr<=rdaddr_tem1;
+        rdaddr_tem1<=memwb_rdaddr_o;
+
+        RFwe<=RFwe_tem1;
+        RFwe_tem1<=memwb_RFwe_o;
+
     end
     
     logic [31:0]ifu_inst_o;
@@ -332,11 +351,12 @@ module cpu import common::*; (
     logic memu_RFwe_o;
     logic[4:0]      memu_rdaddr_o;
     logic[63:0]      memu_rd_wdata_o;
+    logic memu_skip_o;
      /*------- signals to control ----------*/
     logic        memu_stall_req_o;
     logic[63:0]  memu_inst_addr_o;
     logic[31:0]  memu_inst_o;
-
+    
     memu cpu_memu(
         .clk(clk),
         .rst(rst),
@@ -359,7 +379,8 @@ module cpu import common::*; (
         .rd_wdata_o(memu_rd_wdata_o),
         .stall_req_o(memu_stall_req_o),
         .instaddr_o(memu_inst_addr_o),
-        .inst_o(memu_inst_o)
+        .inst_o(memu_inst_o),
+        .skip_o(memu_skip_o)
 
     );
 
@@ -369,6 +390,7 @@ module cpu import common::*; (
     logic[63:0]           memwb_rd_wdata_o;
     logic[63:0]  memwb_inst_addr_o;
     logic[31:0]  memwb_inst_o;
+    logic memwb_skip_o;
 
     mem_wb mem_wb_reg(
         .clk(clk),
@@ -386,7 +408,9 @@ module cpu import common::*; (
         .rdaddr_o(memwb_rdaddr_o),
         .rd_wdata_o(memwb_rd_wdata_o),
         .inst_addr_o(memwb_inst_addr_o),
-        .inst_o(memwb_inst_o)
+        .inst_o(memwb_inst_o),
+        .skip_i(memu_skip_o),
+        .skip_o(memwb_skip_o)
     );
 
     logic [63:0] rdmux_rd_wdata_o;

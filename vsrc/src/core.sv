@@ -42,24 +42,6 @@ module core import common::*;(
 	logic skip;
 	
 	
-	logic RF_W_tem1,RF_W_tem2;
-	always_ff @(posedge clk ) begin:RF_W_show
-		RF_W_tem2 <= RF_W_tem1;
-		RF_W_tem1 <= RFwe;
-	end
-
-	logic[4:0] rdc_tem1,rdc_tem2;
-	always_ff @(posedge clk ) begin:rdc_show
-		rdc_tem2 <= rdc_tem1;
-		rdc_tem1 <= rdc;
-	end
-
-	logic[63:0] rd_tem1, rd_tem2;
-	always_ff @(posedge clk ) begin:rd_show
-		rd_tem2 <= rd_tem1;
-		rd_tem1 <= rd;
-	end
-
 
 
 `ifdef VERILATOR
@@ -73,9 +55,9 @@ module core import common::*;(
 		.skip               (skip),
 		.isRVC              (0),
 		.scFailed           (0),
-		.wen                (RF_W_tem2),
-		.wdest              ({3'b0,rdc_tem2}),
-		.wdata              (rd_tem2)
+		.wen                (RFwe),
+		.wdest              ({3'b0,rdc}),
+		.wdata              (rd)
 	);
 
 	DifftestArchIntRegState DifftestArchIntRegState (

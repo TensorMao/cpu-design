@@ -36,6 +36,7 @@ module memu import common::*;(
     output logic RFwe_o,
     output logic[4:0]       rdaddr_o,
     output logic[63:0]       rd_wdata_o,
+    output logic skip_o,
      /*------- signals to control ----------*/
     output logic        stall_req_o,
     output logic[63:0]  instaddr_o,
@@ -48,6 +49,7 @@ module memu import common::*;(
   assign rd_wdata_o=rd_wdata_i;
   assign instaddr_o=instaddr_i;
   assign inst_o=inst_i;
+  assign skip_o=(mem_addr_i[31]==0)&&(DMre_i||DMwe_i);
   
   
     logic [5:0]ad;
@@ -55,6 +57,7 @@ module memu import common::*;(
     logic [63:0]dresp_data;
     assign rd_wdata_o=(DMre_i||DMwe_i)?dresp_data:rd_wdata_i;
     assign ad={3'b0,dreq.addr[2:0]}<<3;
+
     always_comb begin 
         case(dreq_info_i)
         0:dresp_data={{56{dresp.data[ad+7]}},dresp.data[ad+:8]};//lb sb
@@ -79,12 +82,7 @@ module memu import common::*;(
         endcase 
     end
 
-    assign stall_req_o= (DMre_i||DMwe_i) && ~dresp.data_ok;
-    /*assign dreq.valid=stall_req_o;
-    assign dreq.addr=mem_addr_i;
-    assign dreq.size={1'b0,dreq_info_i[1:0]};
-    assign dreq.strobe=strobe;
-    assign dreq.data= mem_wdata_i<<({3'b0,mem_addr_i[2:0]}<<3);*/
+    assign stall_req_o=  (DMre_i||DMwe_i) && ~dresp.data_ok;
     
       always_ff @(posedge clk)begin
         if(DMre_i)begin

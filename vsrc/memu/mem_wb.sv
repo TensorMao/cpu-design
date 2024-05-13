@@ -25,7 +25,8 @@ module mem_wb(
     input   RFwe_i,
     input[4:0]   rdaddr_i,
     input[63:0]           rd_wdata_i,
-    /*-- signals passed to mem_wb stage -----*/
+    input skip_i,
+    /*-- signals passed to wb stage -----*/
 	//GPR
     output logic [`WBSEL_WIDTH] WBsel_o,
     output logic                    RFwe_o,
@@ -33,7 +34,8 @@ module mem_wb(
     output logic[63:0]           rd_wdata_o,
 
     output logic [63:0] inst_addr_o,
-    output logic [31:0] inst_o
+    output logic [31:0] inst_o,
+    output logic skip_o
 );
 
     always_ff @ (posedge clk) begin
@@ -51,6 +53,7 @@ module mem_wb(
             rd_wdata_o <= rd_wdata_i;
             inst_o<=inst_i;
             inst_addr_o<=inst_addr_i;
+            skip_o<=skip_i;
 
         end  //if
     end  //always
