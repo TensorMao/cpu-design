@@ -46,7 +46,6 @@ module memu import common::*;(
   assign WBsel_o=WBsel_i;
   assign RFwe_o=RFwe_i;
   assign rdaddr_o=rdaddr_i;
-  assign rd_wdata_o=rd_wdata_i;
   assign instaddr_o=instaddr_i;
   assign inst_o=inst_i;
   assign skip_o=(mem_addr_i[31]==0)&&(DMre_i||DMwe_i);
