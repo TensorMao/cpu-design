@@ -50,6 +50,7 @@ module csr(
             mstatus_pie <= 1'b1;
         end
     end
+    
 
 endmodule
 
