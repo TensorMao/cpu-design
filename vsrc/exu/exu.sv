@@ -27,9 +27,14 @@ module exu(
     output logic [63:0] div_out,
     output logic [63:0] rem_out,
     output logic [63:0] mul_out,
-   
-    output logic exu_finish
-    
+    output logic exu_finish,
+    //csr
+    input [2:0] CSRsel,
+    output logic [63:0] csr_wdata_o,
+    output logic [63:0] csr_wdata_rd_o,
+    input [63:0] csr_rdata_i,
+    input  [63:0] exu_exception_i,
+    output logic [63:0] exu_exception_o
     );
     logic alu_data_ok,br_data_ok,div_data_ok,mul_data_ok,redirect_valid,div_valid,mul_valid;
     logic [63:0]alu_res,br_res,div_res,rem_res,mul_res;
@@ -65,12 +70,51 @@ module exu(
                 rem_out<=rem_res;
                 mul_out<=mul_res;
                 redirect_valid_out<=redirect_valid;
+                //csr
+                csr_wdata_rd_o<=csr_rdata_i;
+                exu_exception_o <= exu_exception_i;
+                csr_wdata_o<=csr_data;
                 exu_finish<=1;
             end
             else exu_finish<=0;
     end
 
-    
+    logic [63:0] csr_result;
+    assign       csr_result = csr_rdata_i;
+
+    logic [63:0]csr_data;
+    // calculate the data to write to the csr
+    always_comb begin
+        if(rst) begin
+            csr_data = 0;
+        end else begin
+            case (CSRsel)
+                1: begin
+                    csr_data = rs1;// csrrw
+                end
+                2: begin
+                    csr_data = rs1 | csr_result;// csrrs
+                end
+                3: begin
+                    csr_data = csr_result & (~rs1); // csrrc
+                end
+                4: begin
+                    csr_data = sext_num;// csrrwi
+                end
+                5: begin
+                    csr_data = sext_num | csr_result;// csrrsi
+                end
+                6: begin
+                    csr_data = csr_result & (~sext_num);//csrrci
+                end
+                default: begin
+                    csr_data = 0;
+                end
+            endcase
+        end 
+    end  
+
+   
 
     
 endmodule

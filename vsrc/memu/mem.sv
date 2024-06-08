@@ -10,19 +10,29 @@ module mem import common::*;(
     input rst,
     input DMre,
     input DMwe,
-    input [63:0]addr,
+    input [63:0]vaddr,
     input [63:0]data,
     input [2:0] dreq_info,
     output dbus_req_t  dreq,
 	input  dbus_resp_t dresp,
     output logic [63:0]dmem_out,
-    output logic memu_finish
+    output logic memu_finish,
+    input memu_valid,
+    input [63:0]memu_exception_i,
+    output logic[63:0] memu_exception_o,
+    input [63:0]satp_i,
+    input dreqSel_i
     );
 
     logic [5:0]ad;
     logic [7:0]strobe;
     logic [63:0]dresp_data;
     assign ad={3'b0,dreq.addr[2:0]}<<3;
+
+    logic misaligned_load,misaligned_store; 
+    assign misaligned_load=0;
+    assign misaligned_store=0;
+
     always_comb begin 
         case(dreq_info)
         0:dresp_data={{56{dresp.data[ad+7]}},dresp.data[ad+:8]};
@@ -47,26 +57,49 @@ module mem import common::*;(
         endcase 
     end
 
+    logic [63:0] addr;
+
+    assign addr=vaddr;
+
+    always_ff@(posedge clk)begin
+        if(rst)begin
+            memu_exception_o<=0;
+        end
+        else if(memu_valid)begin
+              memu_exception_o[6:0]<={misaligned_load,misaligned_store,memu_exception_i[4:0]};
+        end
+      
+    end
+
+
+
+
     always_ff @(posedge clk)begin
-        if(DMre)begin
+
+        if(DMre && !misaligned_load)begin
             dreq.valid<=1;
             dreq.addr<=addr;
             dreq.size<={1'b0,dreq_info[1:0]};
             dreq.strobe<=0;
         end
-        if(DMwe)begin
+        else if(DMwe && !misaligned_store)begin
             dreq.valid<=1;
             dreq.addr<=addr;
             dreq.size<={1'b0,dreq_info[1:0]};
             dreq.strobe<=strobe;
             dreq.data<= data<<({3'b0,addr[2:0]}<<3);
         end     
-         if(dresp.data_ok)begin
+        else if(memu_valid)begin
+            memu_finish<=1;
+        end
+
+        if(dreqSel_i&& dresp.data_ok)begin
             dmem_out<=dresp_data;
             dreq.valid<=0;
             memu_finish<=1;
         end
-        else memu_finish<=0;
+
+        if(memu_finish)memu_finish<=0;
     end
 
 

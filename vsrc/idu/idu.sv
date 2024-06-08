@@ -1,27 +1,23 @@
-`ifndef __CONTROLUNIT_SV
-`define __CONTROLUNIT_SV
+`ifndef __IDU_SV
+`define __IDU_SV
 `ifdef VERILATOR
 `include "param.sv"
 `else
-
+`include "param.sv"
 `endif
 
-module controlUnit(
+module idu(
     input clk,
     input rst,
     input [31:0] instr,
-    input ifu_finish,
-    input exu_finish,
-    input memu_finish,
-    output logic ifu_valid,
-    output logic idu_valid,
-    output logic exu_valid,
-    output logic memu_valid,
-    output logic wb_valid,
+    input logic ifu_valid,
+    input logic idu_valid,
+    input logic exu_valid,
+    input logic memu_valid,
+    input logic wb_valid,
     output logic [4:0]rs1addr,
     output logic [4:0]rs2addr,
     output logic [4:0]rdaddr,
-    output logic [11:0]csraddr,
     output logic [63:0] sext_num,
     output logic [`ALUOP_WIDTH]ALUop,
     output logic [`ALUASEL_WIDTH] ALUAsel,
@@ -31,57 +27,16 @@ module controlUnit(
     output logic RFwe,
     output logic DMre,
     output logic DMwe,
-    output logic [2:0] dreq_info
+    output logic [2:0] dreq_info,
+    //csr
+    output logic  csr_we_o,
+    //output logic csr_re_o,
+    output logic[11:0]  csr_addr_o,
+    output logic[2:0] CSRsel,
+    input [63:0] id_exception_i,
+    output logic[63:0] id_exception_o
     );
-    //state
-     typedef enum { 
-        s0,
-        s1, //ifetch
-        s2, //decode
-        s3, //execute
-        s4, //memrw
-        s5  //writeback
-    } state_t;
-    state_t state,nxt_state;
-
-    assign ifu_valid= (state!=s1 && nxt_state==s1);
-    assign idu_valid= (state!=s2 && nxt_state==s2);
-    assign exu_valid= (state!=s3 && nxt_state==s3);
-    assign memu_valid=(state!=s4 && nxt_state==s4);
-    assign wb_valid=  (state!=s5 && nxt_state==s5);
-    always_ff @( posedge clk ) begin
-        if(rst) state<=s1;
-        else state <= nxt_state;  
-    end
-
-    always_comb begin : state_change
-        case(state)
-        s0: nxt_state=s1;
-        s1:begin
-            if(ifu_finish) nxt_state=s2;
-            else nxt_state=s1;
-        end
-        s2:begin
-            nxt_state=s3;
-        end
-        s3:begin 
-            if(exu_finish) begin
-                if(sd|sb|sh|sw|ld|lb|lh|lw|lbu|lhu|lwu)nxt_state=s4;
-                else nxt_state=s5;
-            end
-            else nxt_state=s3;
-        end
-        s4:begin
-            if(memu_finish)begin
-                nxt_state=s5;
-            end
-            else nxt_state=s4;
-        end
-        s5:begin
-            nxt_state=s1;
-        end
-        endcase
-    end
+    
 
     //instr
     logic [6:0] op,func7; logic [5:0]func6; logic [2:0]func3;     
@@ -179,11 +134,20 @@ module controlUnit(
     assign remuw=   R_type64 && (func3==3'b111) && (func7==7'b0000001);
 
     /*--csr--*/
-    //assign csrrw=   CSR_type && (func3==3'b001);
+    logic csrrw, csrrs,csrrc,csrrwi,csrrsi,csrrci,mret,ecall;
+    assign csrrw=   CSR_type && (func3==3'b001);
+    assign csrrs= CSR_type && (func3==3'b010);
+    assign csrrc= CSR_type && (func3==3'b011);
+    assign csrrwi=CSR_type && (func3==3'b101);
+    assign csrrsi=CSR_type && (func3==3'b110);
+    assign csrrci=CSR_type && (func3==3'b111);
+    assign mret=CSR_type && (func3==0)&&(func7==7'b0011000);
+    assign ecall=CSR_type && (func3==0)&&(func7==0);
 
     
 
     //signal
+    
 
     logic [`SEXTSEL_WIDTH] SEXTsel;
     assign rs1addr=instr[19:15];
@@ -234,7 +198,7 @@ module controlUnit(
     end
 
     always_comb begin : ALUBsel_blk
-       if(addi|andi|ori|xori|lui|auipc|sd|sb|sh|sw|ld|lb|lh|lw|lbu|lhu|lwu|slti|sltiu|addiw|slli|srli|srai|slliw|srliw|sraiw) ALUBsel=1;//imm
+       if(addi|andi|ori|xori|lui|auipc|sd|sb|sh|sw|ld|lb|lh|lw|lbu|lhu|lwu|slti|sltiu|addiw|slli|srli|srai|slliw|srliw|sraiw|csrrwi|csrrsi|csrrci) ALUBsel=1;//imm
        else if(jal|jalr)ALUBsel=3;//4
        else ALUBsel=0;       //rs2
     end
@@ -246,6 +210,7 @@ module controlUnit(
         else if(addi|andi|ori|xori|jalr|ld|lb|lh|lw|lbu|lhu|lwu|slti|sltiu|addiw)                                                      SEXTsel=4;//12
         else if(sd|sb|sh|sw)                                        SEXTsel=5;//sd
         else if(slli|srli|srai|slliw|srliw|sraiw)                   SEXTsel=6;//shamt
+        else if(csrrwi|csrrsi|csrrci)                               SEXTsel=7;//zimm
         else  SEXTsel=0;
     end
 
@@ -257,6 +222,7 @@ module controlUnit(
             4: sext_num={{52{instr[31]}},instr[31:20]};//12
             5: sext_num={{52{instr[31]}},instr[31:25],instr[11:7]};//sd
             6: sext_num={58'b0,instr[25:20]};//shamt
+            7: sext_num={59'b0,instr[19:15]};//zimm
         endcase
     end
 
@@ -277,10 +243,11 @@ module controlUnit(
         else if(div|divu|divw|divuw) WBsel=5;
         else if(remw|remuw|rem|remu) WBsel=6;
         else if( mul|mulw)WBsel=7;
+        else if(csrrw|csrrs|csrrc|csrrwi|csrrsi|csrrci)WBsel=3;
         else WBsel=0;
     end
 
-      always_comb begin :dreq_info_blk
+    always_comb begin :dreq_info_blk
         if(ld|sd)       dreq_info=3'b011;
         else if(lw|sw)  dreq_info=3'b010;
         else if(lwu)    dreq_info=3'b110;
@@ -291,26 +258,27 @@ module controlUnit(
         else dreq_info=3'b011;
     end
 
+    always_comb begin :CSR_sel_blk
+        if(csrrw) CSRsel=1;
+        else if(csrrs)CSRsel=2;
+        else if(csrrc)CSRsel=3;
+        else if(csrrwi)CSRsel=4;
+        else if(csrrsi)CSRsel=5;
+        else if(csrrci)CSRsel=6;
+        else CSRsel=0;
+    end
+
+    assign csr_addr_o=instr[31:20];
+    assign csr_we_o = (csrrw|csrrwi|csrrs|csrrsi|csrrc|csrrci) && wb_valid;
+    //assign csr_re_o = csrrw|csrrwi|csrrs|csrrsi|csrrc|csrrci;
+
+    logic   ebreak;
+    logic   illegal_inst;
+    assign ebreak=0;
+    assign illegal_inst=0;
+    assign id_exception_o[4:0]= {ebreak, ecall, mret,illegal_inst,id_exception_i[0]} ;
 
 
-
-
-
-
-    
-
-    
-
-
-
-
-
-
-
-
-
-
-    
 endmodule
 
 

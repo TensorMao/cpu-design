@@ -9,11 +9,14 @@ module pcnxt(
     input [63:0]pc_in,
     input redirect_valid,
     input [63:0]redirect_target,
-    output logic [63:0]pc_nxt
+    output logic [63:0]pc_nxt,
+    input flush,
+    input [63:0]csr_new_pc_i
     );
 
     always_comb begin 
-        pc_nxt=redirect_valid?redirect_target:(pc_in+4);
+        if(flush)pc_nxt=csr_new_pc_i;
+        else  pc_nxt=redirect_valid?redirect_target:(pc_in+4);
     end
 
 endmodule

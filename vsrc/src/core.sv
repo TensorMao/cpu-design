@@ -14,8 +14,21 @@ module core import common::*;(
 	input  dbus_resp_t dresp,
 	input  logic       trint, swint, exint
 );
-	/* TODO: Add your CPU-Core here. */
-	cpu cpu(clk,reset,ireq,iresp,dreq,dresp,pc_delay,instr,RF_W,rdc,rd,regarray,valid,skip);
+
+	cpu cpu(clk,reset,ireq,iresp,dreq,dresp,pc_out,instr,RF_W,rdc,rd,regarray,valid,skip,trint, swint, exint,
+		.mstatus(mstatus),
+        .mepc(mepc), 
+	    .mtval(mtval), 
+        .mtvec(mtvec),
+        .mcause(mcause),
+	    .satp(satp) ,
+        .mip(mip),   
+	    .mie(mie),
+	    .mscratch(mscratch),
+		.mode_o(mode)
+	);
+	logic [63:0] mstatus,mepc,mtval,mtvec,mcause,satp,mip,mie,mscratch;
+	logic [1:0] mode;
 	
 	logic [31:0] instr;
     logic RF_W;
@@ -23,8 +36,36 @@ module core import common::*;(
     logic [63:0] rd;
 	logic [63:0] regarray [31:0];
 	logic valid;
-	logic  [63:0]pc_delay;
+	logic  [63:0]pc_delay,pc_out;
 	logic skip;
+
+
+	logic [63:0] temp_clk;
+	always_ff @(posedge clk ) begin
+		if(reset)temp_clk<=0;
+		temp_clk <= temp_clk + 1;
+		
+	end
+	/*always_ff@(posedge clk)begin
+		if(temp_clk==44052756)begin
+			$display("dreq addr:%0h",dreq.addr);
+			$display("dreq valid:%d",dreq.valid);
+			$display("ireq addr:%0h",ireq.addr);
+			$display("ireq valid:%d",ireq.valid);
+			$display("pc_out:%0h",pc_tem);
+			$display("mode:%0h",mode_tem2);
+			$finish();
+		end
+	end*/
+
+	logic[63:0] pc_tem;
+	always_ff @(posedge clk ) begin:pc_show
+	
+		pc_tem <=pc_delay;
+		pc_delay <= pc_out;
+		
+		
+	end
 	
 	
 	logic RF_W_tem1,RF_W_tem2;
@@ -45,6 +86,12 @@ module core import common::*;(
 		rd_tem1 <= rd;
 	end
 
+	logic[1:0] mode_tem1,mode_tem2;
+	always_ff @(posedge clk ) begin:mode_show
+		mode_tem2 <= mode_tem1;
+		mode_tem1 <= mode;
+	end
+
 
 
 `ifdef VERILATOR
@@ -53,7 +100,7 @@ module core import common::*;(
 		.coreid             (0),
 		.index              (0),
 		.valid              (valid),
-		.pc                 (pc_delay),
+		.pc                 (pc_tem),
 		.instr              (instr),
 		.skip               (skip),
 		.isRVC              (0),
@@ -113,21 +160,21 @@ module core import common::*;(
 	DifftestCSRState DifftestCSRState(
 		.clock              (clk),
 		.coreid             (0),
-		.priviledgeMode     (3),
-		.mstatus            (0),
-		.sstatus            (0 /* mstatus & 64'h800000030001e000 */),
-		.mepc               (0),
+		.priviledgeMode     (mode_tem1),
+		.mstatus            (mstatus),
+		.sstatus            ( mstatus & 64'h800000030001e000 ),
+		.mepc               (mepc),
 		.sepc               (0),
-		.mtval              (0),
+		.mtval              (mtval),
 		.stval              (0),
-		.mtvec              (0),
+		.mtvec              (mtvec),
 		.stvec              (0),
-		.mcause             (0),
+		.mcause             (mcause),
 		.scause             (0),
-		.satp               (0),
-		.mip                (0),
-		.mie                (0),
-		.mscratch           (0),
+		.satp               (satp),
+		.mip                (mip),
+		.mie                (mie),
+		.mscratch           (mscratch),
 		.sscratch           (0),
 		.mideleg            (0),
 		.medeleg            (0)

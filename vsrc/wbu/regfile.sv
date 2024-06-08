@@ -18,7 +18,9 @@ module regfile(
    input [63:0] rd,
    output logic[63:0] rs1,
    output logic[63:0] rs2,
-   output logic [63:0] regarray [31:0] );
+   output logic [63:0] regarray [31:0],
+   output logic wb_finish
+   );
    integer i;
  //write
    always_ff @( posedge rst ) begin : init
@@ -34,9 +36,10 @@ module regfile(
       if (RFwe) begin
          if(rdaddr != 0) begin
             regarray[rdaddr] = rd;
-            
        end
-    end
+      end
+      if(wb_valid)wb_finish<=1;
+      if(wb_finish)wb_finish<=0;
    end
 
    always_ff @(posedge clk)begin: read
